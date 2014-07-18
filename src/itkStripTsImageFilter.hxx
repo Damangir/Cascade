@@ -40,8 +40,9 @@ void StripTsImageFilter< TImageType, TAtlasLabelType >::GenerateData()
   typename AtlasDuplicatorType::Pointer duplicator = AtlasDuplicatorType::New();
   duplicator->SetInputImage(this->GetAtlasBrainMask());
   duplicator->Update();
-  m_AtlasMask = duplicator->GetModifiableOutput();
-
+  m_AtlasMask = duplicator->GetOutput();
+  m_AtlasMask->DisconnectPipeline();
+  
   // do the processing
   this->DownsampleImage(1);
   this->RescaleImages();
