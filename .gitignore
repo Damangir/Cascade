@@ -1,7 +1,5 @@
 build/
-
 .DS_Store
-
 *.pyc
 
 CMakeCache.txt
