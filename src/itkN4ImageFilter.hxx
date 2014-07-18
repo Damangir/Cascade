@@ -31,6 +31,8 @@
 #include "itkN4BiasFieldCorrectionImageFilter.h"
 #include "itkOtsuThresholdImageFilter.h"
 #include "itkShrinkImageFilter.h"
+#include "itkBinaryFunctorImageFilter.h"
+#include "itkLogicOpsFunctors.h"
 
 #include "itkTimeProbe.h"
 
@@ -39,25 +41,26 @@ namespace itk
 
 template< class TInputImage, class TOutputImage >
 N4ImageFilter< TInputImage, TOutputImage >::N4ImageFilter()
-  {
+{
   m_MinSampleDistance = 5;
-  }
+}
 
 template< class TInputImage, class TOutputImage >
 void N4ImageFilter< TInputImage, TOutputImage >::PrintSelf(std::ostream & os,
-                                                        Indent indent) const
-  {
+                                                           Indent indent) const
+{
   Superclass::PrintSelf(os, indent);
-  os << indent << "Minimum distance for shrinkage: " << m_MinSampleDistance << std::endl;
-  }
+  os << indent << "Minimum distance for shrinkage: " << m_MinSampleDistance
+  << std::endl;
+}
 
 template< class TInputImage, class TOutputImage >
 void N4ImageFilter< TInputImage, TOutputImage >::GenerateData()
-  {
+{
   typedef itk::Image< unsigned char, InputImageDimension > MaskImageType;
 
   const InputImageType* inputImage = this->GetInput();
-  typename MaskImageType::Pointer maskImage = NULL;
+  typename MaskImageType::Pointer maskImage;
   typename InputImageType::Pointer weightImage = NULL;
 
   typedef itk::N4BiasFieldCorrectionImageFilter< InputImageType, MaskImageType,
@@ -67,9 +70,8 @@ void N4ImageFilter< TInputImage, TOutputImage >::GenerateData()
   /**
    * handle the mask image
    */
-
-  if (!maskImage)
-    {
+  if (!this->GetInput(1))
+  {
     itkDebugMacro("Mask not read.  Creating Otsu mask.");
     typedef itk::OtsuThresholdImageFilter< InputImageType, MaskImageType > ThresholderType;
     typename ThresholderType::Pointer otsu = ThresholderType::New();
@@ -80,7 +82,22 @@ void N4ImageFilter< TInputImage, TOutputImage >::GenerateData()
     maskImage = otsu->GetOutput();
     maskImage->Update();
     maskImage->DisconnectPipeline();
-    }
+  }
+  else
+  {
+    typedef itk::BinaryFunctorImageFilter< InputImageType, MaskImageType,
+        MaskImageType,
+        itk::Functor::NotEqual< typename InputImageType::PixelType,
+            typename InputImageType::PixelType,
+            typename MaskImageType::PixelType > > NotEqualMaskFilterType;
+    typename NotEqualMaskFilterType::Pointer neqFilter =
+        NotEqualMaskFilterType::New();
+    neqFilter->SetInput1(this->GetInput(1));
+    neqFilter->SetConstant2(0);
+    maskImage = neqFilter->GetOutput();
+    maskImage->Update();
+    maskImage->DisconnectPipeline();
+  }
 
   /**
    * TODO: convergence options
@@ -109,9 +126,11 @@ void N4ImageFilter< TInputImage, TOutputImage >::GenerateData()
   typedef itk::ShrinkImageFilter< InputImageType, InputImageType > ShrinkerType;
   typedef typename ShrinkerType::ShrinkFactorsType ShrinkFactorsType;
   ShrinkFactorsType shrinkage;
-  for (unsigned int i=0;i<InputImageDimension;i++){
+  for (unsigned int i = 0; i < InputImageDimension; i++)
+  {
     shrinkage[i] = m_MinSampleDistance / inputImage->GetSpacing()[i];
-    if (shrinkage[i] < 1){
+    if (shrinkage[i] < 1)
+    {
       shrinkage[i] = 1;
     }
   }
@@ -136,13 +155,13 @@ void N4ImageFilter< TInputImage, TOutputImage >::GenerateData()
   typename WeightShrinkerType::Pointer weightshrinker =
       WeightShrinkerType::New();
   if (weightImage)
-    {
+  {
     weightshrinker->SetInput(weightImage);
     weightshrinker->SetShrinkFactors(shrinkage);
     weightshrinker->Update();
 
     correcter->SetConfidenceImage(weightshrinker->GetOutput());
-    }
+  }
 
   /**
    * TODO: histogram sharpening options
@@ -182,9 +201,9 @@ void N4ImageFilter< TInputImage, TOutputImage >::GenerateData()
   itk::ImageRegionIterator< InputImageType > ItF(
       logField, logField->GetLargestPossibleRegion());
   for (ItB.GoToBegin(), ItF.GoToBegin(); !ItB.IsAtEnd(); ++ItB, ++ItF)
-    {
+  {
     ItF.Set(ItB.Get()[0]);
-    }
+  }
 
   typedef itk::ExpImageFilter< InputImageType, InputImageType > ExpFilterType;
   typename ExpFilterType::Pointer expFilter = ExpFilterType::New();
@@ -213,8 +232,8 @@ void N4ImageFilter< TInputImage, TOutputImage >::GenerateData()
   biasFieldCropper->Update();
 
   this->GraftNthOutput(0, cropper->GetOutput());
-  //this->GraftNthOutput(1, biasFieldCropper->GetOutput());
-  }
+//this->GraftNthOutput(1, biasFieldCropper->GetOutput());
+}
 
 } // end namespace itk
 
