@@ -92,14 +92,6 @@ def originalImages(input, output):
     cascade.binary_proxy.fsl_run('fslreorient2std', [output, output])
 
 ###############################################################################
-# Bring the brain mask into the pipeline
-###############################################################################
-@ruffus.transform(options.brain_mask, ruffus.regex('.*'), cascadeManager.imageInSpace('brainMask.nii.gz', options.brain_mask_space))
-def brainMask(input, output):
-    cascade.binary_proxy.fsl_run('fslchfiletype', ['NIFTI_GZ', input, output])
-    cascade.binary_proxy.fsl_run('fslreorient2std', [output, output])
-
-###############################################################################
 # Bring the base image into the pipeline
 ###############################################################################
 @ruffus.originate(cascadeManager.imageInSpace(cascadeManager.calcSpace + '.nii.gz', cascadeManager.calcSpace))
@@ -177,7 +169,7 @@ def resampleStdParam():
 
 @ruffus.follows(linearRegistrationToStandard)        
 @ruffus.files(resampleStdParam)
-def resampleToStandard(input, output, manager):
+def resampleStdToNative(input, output, manager):
     movingImage = input[0]
     fixedImage = input[1]
     transferFile = input[2]
@@ -186,50 +178,84 @@ def resampleToStandard(input, output, manager):
         cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile, 'nn'], movedImage)
     else:
         cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile], movedImage)
-    
-###############################################################################
-# Register brain mask to images
-###############################################################################
-@ruffus.follows(interaRegistration)
-@ruffus.transform(brainMask, ruffus.formatter(),
-                  cascadeManager.imageInSpace('brainMask.nii.gz', cascadeManager.calcSpace),
-                  cascadeManager)
-def brainMaskRegistration(input, output, manager):
-    movingImage = input
-    movedImage = output
-    fixedImage = manager.imageInSpace(manager.calcSpace + '.nii.gz', manager.calcSpace)
-    transferFile = manager.transITKName(manager.getImageSpace(input), manager.getImageSpace(fixedImage))
-    cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile, 'nn'], movedImage)
+        
 
-###############################################################################
-# Brain extraction
-###############################################################################
-@ruffus.combinatorics.product(interaRegistration,
-                              ruffus.formatter(),
-                              brainMaskRegistration,
-                              ruffus.formatter(),
-                              cascadeManager.imageInSpace('{basename[0][0]}.brain{ext[0][0]}', cascadeManager.calcSpace),
-                              cascadeManager)
-def brainExtraction(input, output, manager):
-    cascade.binary_proxy.fsl_run('fslmaths', [input[0][0], '-mas', input[1], output])
+if options.brain_mask:
+    ###############################################################################
+    # Bring the brain mask into the pipeline
+    ###############################################################################
+    @ruffus.transform(options.brain_mask, ruffus.regex('.*'), cascadeManager.imageInSpace('brain_mask.nii.gz', options.brain_mask_space))
+    def brainMask(input, output):
+        cascade.binary_proxy.fsl_run('fslchfiletype', ['NIFTI_GZ', input, output])
+        cascade.binary_proxy.fsl_run('fslreorient2std', [output, output])
+
+    ###############################################################################
+    # Register brain mask to images
+    ###############################################################################
+    @ruffus.follows(interaRegistration)
+    @ruffus.transform(brainMask, ruffus.formatter(),
+                      cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace),
+                      cascadeManager)
+    def brainMaskRegistration(input, output, manager):
+        movingImage = input
+        movedImage = output
+        fixedImage = manager.imageInSpace(manager.calcSpace + '.nii.gz', manager.calcSpace)
+        transferFile = manager.transITKName(manager.getImageSpace(input), manager.getImageSpace(fixedImage))
+        cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile, 'nn'], movedImage)
+
+    @ruffus.transform(brainMaskRegistration, ruffus.formatter(),
+                      cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace),
+                      cascadeManager)
+    def brainExtraction(input, output, manager):
+        pass
+else:
+    def beParam():
+        imgForBex = filter(lambda x:x in inputImages, ['PD', 'T1','FLAIR','T2'])[0]
+        inImages = [cascadeManager.imageInSpace(imgForBex+'.nii.gz', cascadeManager.calcSpace),
+                    cascadeManager.imageInSpace(os.path.basename(cascade.config.StandardBrainMask),cascadeManager.calcSpace),
+                   ]
+        beParams = [
+                     ]
+        outImages = [
+                    cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace),
+                    ]
+        
+        params = [
+                  inImages,
+                  outImages,
+                  beParams
+                  ]
+        yield params
+    @ruffus.follows(resampleStdToNative)        
+    @ruffus.follows(interaRegistration) 
+    @ruffus.files(beParam)       
+    def brainExtraction(input, output, param):
+        cascade.binary_proxy.cascade_run('brainExtraction', input + output + param, output)
+
 
 ###############################################################################
 # Normalize image
+# @ruffus.transform(brainExtraction, ruffus.formatter(),
+#                  cascadeManager.imageInSpace('{basename[0]}.norm{ext[0]}', cascadeManager.calcSpace),
+#                  cascadeManager)
+#
 ###############################################################################
-@ruffus.transform(brainExtraction, ruffus.formatter(),
-                  cascadeManager.imageInSpace('{basename[0]}.norm{ext[0]}', cascadeManager.calcSpace),
-                  cascadeManager)
+@ruffus.combinatorics.product(interaRegistration,
+                              ruffus.formatter(),
+                              brainExtraction,
+                              ruffus.formatter(),
+                              cascadeManager.imageInSpace('{basename[0][0]}.norm{ext[0][0]}', cascadeManager.calcSpace),
+                              cascadeManager)
 def normalize(input, output, manager):
-    cascade.binary_proxy.cascade_run('inhomogeneity', [input, output], output)
-    pass
+    cascade.binary_proxy.cascade_run('inhomogeneity', [input[0][0],input[1][0], output], output)
 
 ###############################################################################
 # CSF segmentation
 ###############################################################################
 def csfParam():
     imgForCSFSeg = filter(lambda x:x in inputImages, ['FLAIR', 'T1','T2', 'PD'])[0]
-    inImages = [cascadeManager.imageInSpace(imgForCSFSeg+'.brain.norm.nii.gz', cascadeManager.calcSpace),
-                cascadeManager.imageInSpace('brainMask.nii.gz', cascadeManager.calcSpace),
+    inImages = [cascadeManager.imageInSpace(imgForCSFSeg+'.norm.nii.gz', cascadeManager.calcSpace),
+                cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace),
                 cascadeManager.imageInSpace(os.path.basename(cascade.config.StandardCSF),cascadeManager.calcSpace),
                ]
     btsParams = [
@@ -237,7 +263,7 @@ def csfParam():
                  3,   # nIteration
                  ]
     outImages = [
-                cascadeManager.imageInSpace('csfMask.nii.gz', cascadeManager.calcSpace),
+                cascadeManager.imageInSpace('csf_mask.nii.gz', cascadeManager.calcSpace),
                 ]
     
     params = [
@@ -247,7 +273,7 @@ def csfParam():
               ]
     yield params
     
-@ruffus.follows(resampleToStandard)        
+@ruffus.follows(resampleStdToNative)        
 @ruffus.follows(normalize)        
 @ruffus.files(csfParam)
 def csfSegmentation(input, output, param):
@@ -258,9 +284,9 @@ def csfSegmentation(input, output, param):
 ###############################################################################
 def wgSepParam():
     imgForBTSSeg = filter(lambda x:x in inputImages, ['T1','T2', 'FLAIR', 'PD'])[0]
-    inImages = [cascadeManager.imageInSpace(imgForBTSSeg+'.brain.norm.nii.gz', cascadeManager.calcSpace),
-                cascadeManager.imageInSpace('brainMask.nii.gz', cascadeManager.calcSpace),
-                cascadeManager.imageInSpace('csfMask.nii.gz', cascadeManager.calcSpace),
+    inImages = [cascadeManager.imageInSpace(imgForBTSSeg+'.norm.nii.gz', cascadeManager.calcSpace),
+                cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace),
+                cascadeManager.imageInSpace('csf_mask.nii.gz', cascadeManager.calcSpace),
                 cascadeManager.imageInSpace(os.path.basename(cascade.config.StandardGM),cascadeManager.calcSpace),
                 cascadeManager.imageInSpace(os.path.basename(cascade.config.StandardWM),cascadeManager.calcSpace), ]
     btsParams = [
@@ -289,7 +315,7 @@ def WhiteGrayMatterSeparation(input, output, param):
 ###############################################################################
 def btsParam():
     imgForBTSSeg = filter(lambda x:x in inputImages, ['FLAIR', 'T2', 'PD'])[0]
-    inImages = [cascadeManager.imageInSpace(imgForBTSSeg+'.brain.nii.gz', cascadeManager.calcSpace),
+    inImages = [cascadeManager.imageInSpace(imgForBTSSeg+'.norm.nii.gz', cascadeManager.calcSpace),
                 cascadeManager.imageInSpace('WG.separation.nii.gz', cascadeManager.calcSpace),
                ]
     btsParams = [
@@ -317,7 +343,7 @@ def brainTissueSegmentation(input, output, param):
 ###############################################################################
 def modelFreeParam():
     imgForModelFree = filter(lambda x:x in inputImages, ['FLAIR', 'T2','PD'])[0]
-    inImages = [cascadeManager.imageInSpace(imgForModelFree + '.brain.nii.gz', cascadeManager.calcSpace),
+    inImages = [cascadeManager.imageInSpace(imgForModelFree + '.norm.nii.gz', cascadeManager.calcSpace),
                 cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', cascadeManager.calcSpace),
                 ]
     btsParams = [
