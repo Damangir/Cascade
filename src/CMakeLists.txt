@@ -17,6 +17,9 @@ target_link_libraries(linRegister ${ITK_LIBRARIES})
 add_executable(resample resample.cxx)
 target_link_libraries(resample ${ITK_LIBRARIES})
 
+add_executable(resampleVector resampleVector.cxx)
+target_link_libraries(resampleVector ${ITK_LIBRARIES})
+
 add_executable(inhomogeneity inhomogeneity.cxx)
 target_link_libraries(inhomogeneity ${ITK_LIBRARIES})
 
@@ -34,3 +37,6 @@ target_link_libraries(refineBTS ${ITK_LIBRARIES})
 
 add_executable(modelFree modelFree.cxx)
 target_link_libraries(modelFree ${ITK_LIBRARIES})
+
+add_executable(localFeature localFeature.cxx)
+target_link_libraries(localFeature ${ITK_LIBRARIES})

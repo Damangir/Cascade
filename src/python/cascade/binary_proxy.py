@@ -103,12 +103,14 @@ cascade.logger.info('Cascade location: %s', cascade.config.ExecDir)
 
 cascadeCommands = ['linRegister',
                    'resample',
+                   'resampleVector',
                    'inhomogeneity',
                    'brainExtraction',
                    'extractCSF',
                    'separateWG',
                    'refineBTS',
                    'modelFree',
+                   'localFeature',
                    ]
 
 def cascade_run(cascadecmd, cascadeargs, output_files = None):
