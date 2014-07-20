@@ -56,10 +56,9 @@ int main(int argc, char *argv[])
   typedef float Probability;
 
   typedef itk::Image< PixelType, ImageDimension > ImageType;
-  typedef itk::VectorImage< PixelType, ImageDimension > VectorImageType;
   typedef itk::Image< LabelType, ImageDimension > LabelImageType;
 
-  typedef itk::IterativeBayesianImageFilter< VectorImageType, LabelImageType,
+  typedef itk::IterativeBayesianImageFilter< ImageType, LabelImageType,
       Probability > IBFilterType;
 
   typedef IBFilterType::PriorImageType PriorImageType;
@@ -74,15 +73,11 @@ int main(int argc, char *argv[])
   typedef itk::SubtractImageFilter< PriorImageType > PriorSubFilterType;
   typedef itk::DiscreteGaussianImageFilter< PriorImageType, PriorImageType > PriorSmoothingType;
   typedef itk::ComposeImageFilter< PriorImageType, PriorsVectorImageType > ComposePriorsFilterType;
-  typedef itk::ComposeImageFilter< ImageType, VectorImageType > ComposeInputFilterType;
 
   LabelImageType::Pointer brainMaskImg = CU::LoadImage< LabelImageType >(
       brainMask);
 
-  ComposeInputFilterType::Pointer inputComposer = ComposeInputFilterType::New();
-  inputComposer->SetInput(0, CU::LoadImage< ImageType >(subjectImage));
-  inputComposer->Update();
-  VectorImageType::Pointer subjectImg = inputComposer->GetOutput();
+  ImageType::Pointer subjectImg = CU::LoadImage< ImageType >(subjectImage);
 
   PriorImageType::Pointer csfPriorImg;
   PriorImageType::Pointer wgPriorImg;
@@ -103,8 +98,8 @@ int main(int argc, char *argv[])
    * Mask All inputs:
    */
   {
-    subjectImg = CU::Mask< VectorImageType, LabelImageType >(subjectImg,
-                                                             brainMaskImg);
+    subjectImg = CU::Mask< ImageType, LabelImageType >(subjectImg,
+                                                       brainMaskImg);
     csfPriorImg = CU::Mask< PriorImageType, LabelImageType >(csfPriorImg,
                                                              brainMaskImg);
     wgPriorImg = CU::Mask< PriorImageType, LabelImageType >(wgPriorImg,
@@ -118,28 +113,30 @@ int main(int argc, char *argv[])
 
   ClassifidImageType::Pointer CSFMask;
 
+  ComposePriorsFilterType::Pointer composePriorFilter =
+      ComposePriorsFilterType::New();
   {
-    ComposePriorsFilterType::Pointer composePriorFilter =
-        ComposePriorsFilterType::New();
-    {
-      PriorSmoothingType::Pointer csfPriorSmoothing = PriorSmoothingType::New();
-      PriorSmoothingType::Pointer wgPriorSmoothing = PriorSmoothingType::New();
-      wgPriorSmoothing->SetInput(wgPriorImg);
-      wgPriorSmoothing->SetVariance(10);
-      csfPriorSmoothing->SetInput(csfPriorImg);
-      csfPriorSmoothing->SetVariance(10);
+    PriorSmoothingType::Pointer csfPriorSmoothing = PriorSmoothingType::New();
+    PriorSmoothingType::Pointer wgPriorSmoothing = PriorSmoothingType::New();
+    wgPriorSmoothing->SetInput(wgPriorImg);
+    wgPriorSmoothing->SetVariance(10);
+    csfPriorSmoothing->SetInput(csfPriorImg);
+    csfPriorSmoothing->SetVariance(10);
 
-      composePriorFilter->SetInput(
-          0,
-          CU::Mask< PriorImageType, LabelImageType >(
-              wgPriorSmoothing->GetOutput(), brainMaskImg));
-      composePriorFilter->SetInput(
-          1,
-          CU::Mask< PriorImageType, LabelImageType >(
-              csfPriorSmoothing->GetOutput(), brainMaskImg));
-      composePriorFilter->Update();
-    }
+    composePriorFilter->SetInput(
+        0,
+        CU::Mask< PriorImageType, LabelImageType >(
+            wgPriorSmoothing->GetOutput(), brainMaskImg));
+    composePriorFilter->SetInput(
+        1,
+        CU::Mask< PriorImageType, LabelImageType >(
+            csfPriorSmoothing->GetOutput(), brainMaskImg));
+    composePriorFilter->Update();
+  }
 
+  float possibleWMLThresh;
+
+  {
     IBFilterType::Pointer ibFilter = IBFilterType::New();
 
     // Create WM+GM membership
@@ -150,6 +147,13 @@ int main(int argc, char *argv[])
       hist->SetHistogramSize(size);
       hist->SetInput(subjectImg);
       hist->Update();
+
+      const float spread = hist->GetOutput()->Quantile(0, 0.75)
+          - hist->GetOutput()->Quantile(0, 0.25);
+
+      possibleWMLThresh = CU::histogramMode(hist->GetOutput()->Begin(),
+                                            hist->GetOutput()->End())
+                          + spread * 2;
       EmpiricalDistributionMembershipType::Pointer membership =
           EmpiricalDistributionMembershipType::New();
       membership->SetDistribution(hist->GetOutput());
@@ -157,14 +161,21 @@ int main(int argc, char *argv[])
     }
     //Create CSF membership
     {
+      typedef itk::BinaryThresholdImageFilter<ImageType, ImageType> BinaryThresholdType;
+      BinaryThresholdType::Pointer binThresh = BinaryThresholdType::New();
+      binThresh->SetInput(subjectImg);
+      binThresh->SetUpperThreshold(possibleWMLThresh);
+
+
       WeightedHistogramType::Pointer hist = WeightedHistogramType::New();
       EmpiricalDistributionMembershipType::Pointer membership =
           EmpiricalDistributionMembershipType::New();
-      hist->SetWeightImage(csfPriorImg);
+      hist->SetWeightImage(CU::Mask<PriorImageType, ImageType>(csfPriorImg, binThresh->GetOutput()));
       hist->SetAutoMinimumMaximum(true);
       hist->SetHistogramSize(size);
       hist->SetInput(subjectImg);
       hist->Update();
+
       membership->SetDistribution(hist->GetOutput());
       ibFilter->AddMembershipFunction(membership);
     }
@@ -177,6 +188,47 @@ int main(int argc, char *argv[])
         ibFilter->GetOutput(), brainMaskImg);
   }
 
+  {
+    CSFMask = CU::Erode< ClassifidImageType >(CSFMask, 2);
+    IBFilterType::Pointer ibFilter = IBFilterType::New();
+
+    // Create WM+GM membership
+    {
+      WeightedHistogramType::Pointer hist = WeightedHistogramType::New();
+      hist->SetWeightImage(wgPriorImg);
+      hist->SetAutoMinimumMaximum(true);
+      hist->SetHistogramSize(size);
+      hist->SetInput(subjectImg);
+      hist->Update();
+
+      EmpiricalDistributionMembershipType::Pointer membership =
+          EmpiricalDistributionMembershipType::New();
+      membership->SetDistribution(hist->GetOutput());
+      ibFilter->AddMembershipFunction(membership);
+    }
+    //Create CSF membership
+    {
+      WeightedHistogramType::Pointer hist = WeightedHistogramType::New();
+      EmpiricalDistributionMembershipType::Pointer membership =
+          EmpiricalDistributionMembershipType::New();
+      hist->SetWeightImage(CU::Cast< PriorImageType >(CSFMask.GetPointer()));
+      hist->SetAutoMinimumMaximum(true);
+      hist->SetHistogramSize(size);
+      hist->SetInput(subjectImg);
+      hist->Update();
+
+      membership->SetDistribution(hist->GetOutput());
+      ibFilter->AddMembershipFunction(membership);
+    }
+    ibFilter->SetPriorVectorImage(composePriorFilter->GetOutput());
+    ibFilter->SetInput(subjectImg);
+    ibFilter->SetNumberOfIterations(numberOfIteration);
+    ibFilter->SetPriorBias(priorBias);
+    ibFilter->Update();
+    CSFMask = CU::Mask< ClassifidImageType, LabelImageType >(
+        ibFilter->GetOutput(), brainMaskImg);
+
+}
   CSFMask = CU::Closing< ClassifidImageType >(CSFMask, 1);
   typedef itk::BinaryFillholeImageFilter< ClassifidImageType > FillHoleType;
   FillHoleType::Pointer fillHole = FillHoleType::New();

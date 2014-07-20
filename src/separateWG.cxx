@@ -183,12 +183,7 @@ int main(int argc, char *argv[])
     hist->Update();
     gmDist = hist->GetOutput();
     gmDist->DisconnectPipeline();
-    // Create GM membership
-    hist->SetWeightImage(wmPriorImg);
-    hist->Update();
-    wmDist = hist->GetOutput();
-    wmDist->DisconnectPipeline();
-    // Create GM membership
+    // Create WM membership
     hist->SetWeightImage(wmPriorImg);
     hist->Update();
     wmDist = hist->GetOutput();
@@ -215,6 +210,7 @@ int main(int argc, char *argv[])
     ibFilter->Update();
     WMMask = CU::Mask< ClassifidImageType, ClassifidImageType >(
         ibFilter->GetOutput(), WMGMMask);
+
   }
 
   /*
@@ -232,6 +228,7 @@ int main(int argc, char *argv[])
     ibFilter->Update();
     LesionMask = CU::Mask< ClassifidImageType, ClassifidImageType >(
         ibFilter->GetOutput(), WMMask);
+
   }
 
   if (true)
@@ -250,7 +247,10 @@ int main(int argc, char *argv[])
     smoothFilter->Update();
 
     hist->SetWeightImage(
-        CU::MultiplyConstant< PriorImageType >(smoothFilter->GetOutput(), 100));
+        CU::MultiplyConstant< PriorImageType >(
+            CU::Mask< PriorImageType, ClassifidImageType >(
+                smoothFilter->GetOutput(), WMMask),
+            100));
     hist->SetAutoMinimumMaximum(true);
     hist->SetHistogramSize(size);
     hist->SetInput(subjectImg);
@@ -267,51 +267,67 @@ int main(int argc, char *argv[])
      */
     PriorImageType::Pointer lesionFineProb = CU::NthElementVectorImage(
         membershipFilter->GetOutput(), 0);
+    lesionFineProb = CU::Mask< PriorImageType, ClassifidImageType >(
+        lesionFineProb, WMMask);
 
-    typedef itk::BinaryThresholdImageFunction< PriorImageType, double > FunctionType;
+    typedef itk::Statistics::ImageToWeightedHistogramFilter< PriorImageType,
+        ClassifidImageType > ProbMaskedDistType;
+    ProbMaskedDistType::Pointer probDist = ProbMaskedDistType::New();
+    probDist->SetInput(lesionFineProb);
+    probDist->SetAutoMinimumMaximum(true);
+    probDist->SetHistogramSize(size);
 
-    FunctionType::Pointer function = FunctionType::New();
+    probDist->SetWeightImage(LesionMask);
+    probDist->Update();
 
-    function->SetInputImage(lesionFineProb);
+    float wmlMean = probDist->GetOutput()->Quantile(0, 0.50);
+    float wmlSpread = probDist->GetOutput()->Quantile(0, 0.75)
+        - probDist->GetOutput()->Quantile(0, 0.25);
 
-    /*
-     * Flood fill to expand the Lesion mask to the area with high likelihood of
-     * being a lesion. The aim is to cover all parts that is misclassified as
-     * gray matter even at expense of covering some white matter are.
-     * TODO: Try another region growing algorithm that stops at edges.
-     */
-    typedef itk::FloodFilledImageFunctionConditionalIterator<
-        ClassifidImageType, FunctionType > IteratorType;
-    IteratorType ffIt(LesionMask, function);
+    probDist->SetWeightImage(WMMask);
+    probDist->Update();
 
-    typedef itk::ImageRegionConstIterator< ClassifidImageType > IRIType;
-    typedef itk::ImageRegionConstIterator< PriorImageType > PIRIType;
-    IRIType it = IRIType(LesionMask, LesionMask->GetBufferedRegion());
-    PIRIType pit = PIRIType(lesionFineProb, LesionMask->GetBufferedRegion());
+    float wmMean = probDist->GetOutput()->Quantile(0, 0.50);
+    float wmSpread = probDist->GetOutput()->Quantile(0, 0.75)
+        - probDist->GetOutput()->Quantile(0, 0.25);
 
-    unsigned int nElem = 0;
-    Probability mean = 0;
-    Probability stdDev = 0;
-    for (it.GoToBegin(), pit.GoToBegin(); !it.IsAtEnd(); ++it, ++pit)
+
+    if (wmlMean - wmlSpread > wmMean + wmSpread && wmlMean - 2 * wmlSpread > 0)
     {
-      if (it.Get() != 0)
+      typedef itk::BinaryThresholdImageFunction< PriorImageType, double > FunctionType;
+      FunctionType::Pointer function = FunctionType::New();
+      function->SetInputImage(lesionFineProb);
+      function->ThresholdBetween(wmlMean - 2 * wmlSpread, 1);
+
+      /*
+       * Flood fill to expand the Lesion mask to the area with high likelihood of
+       * being a lesion. The aim is to cover all parts that is misclassified as
+       * gray matter even at expense of covering some white matter are.
+       * TODO: Try another region growing algorithm that stops at edges.
+       */
+      typedef itk::FloodFilledImageFunctionConditionalIterator<
+          ClassifidImageType, FunctionType > IteratorType;
+      IteratorType ffIt(LesionMask, function);
+
+      typedef itk::ImageRegionConstIterator< ClassifidImageType > IRIType;
+      typedef itk::ImageRegionConstIterator< PriorImageType > PIRIType;
+      IRIType it = IRIType(LesionMask, LesionMask->GetBufferedRegion());
+      PIRIType pit = PIRIType(lesionFineProb, LesionMask->GetBufferedRegion());
+
+      for (it.GoToBegin(); !it.IsAtEnd(); ++it)
       {
-        nElem++;
-        Probability thisValue = pit.Get();
-        Probability delta = thisValue - mean;
-        mean += delta / nElem;
-        stdDev += delta * (thisValue - mean);
-        ffIt.AddSeed(it.GetIndex());
+        if (it.Get() != 0)
+        {
+          ffIt.AddSeed(it.GetIndex());
+        }
       }
-    }
-    stdDev = vcl_sqrt(stdDev/( nElem - 1));
-    function->ThresholdBetween(mean - 2 * stdDev, 1);
 
-    ffIt.GoToBegin();
-    while (!ffIt.IsAtEnd())
-    {
-      ffIt.Set(1);
-      ++ffIt;
+      ffIt.GoToBegin();
+      while (!ffIt.IsAtEnd())
+      {
+        ffIt.Set(1);
+        ++ffIt;
+      }
     }
     LesionMask = CU::Mask< ClassifidImageType, ClassifidImageType >(LesionMask,
                                                                     WMMask);

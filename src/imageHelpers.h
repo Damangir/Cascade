@@ -22,6 +22,8 @@
 #include <iostream>
 
 #include "itkImage.h"
+#include "itkImageAlgorithm.h"
+
 #include "itkMaskImageFilter.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
@@ -101,7 +103,8 @@ namespace util
 {
 
 template< typename FilterT >
-typename FilterT::OutputImageType::Pointer GraftOutput(typename FilterT::Pointer filter, unsigned int index = 0)
+typename FilterT::OutputImageType::Pointer GraftOutput(
+    typename FilterT::Pointer filter, unsigned int index = 0)
 {
   typename FilterT::OutputImageType::Pointer image;
   image = filter->GetOutput(index);
@@ -114,9 +117,9 @@ BinaryFilterAsFunction(Add);
 BinaryFilterAsFunction(Subtract);
 BinaryFilterAsFunction(Multiply);
 
-
 template< class ImageT >
-itk::Size< ImageT::ImageDimension > GetPhysicalRadius(const ImageT* img, float r)
+itk::Size< ImageT::ImageDimension > GetPhysicalRadius(const ImageT* img,
+                                                      float r)
 {
   itk::Size< ImageT::ImageDimension > radius;
   for (unsigned int i = 0; i < ImageT::ImageDimension; i++)
@@ -132,7 +135,7 @@ unsigned int GetNumberOfPixels(const itk::Size< VImageDimension >& sz)
   unsigned int total = 1;
   for (unsigned int i = 0; i < VImageDimension; i++)
   {
-    total *= sz[i]*2 + 1;
+    total *= sz[i] * 2 + 1;
   }
   return total;
 }
@@ -170,7 +173,8 @@ typename ImageT::Pointer Dilate(const ImageT* img, float r,
   DispatchFilterOutput(morph, typename ImageT::Pointer);
 }
 template< class ImageT >
-typename ImageT::Pointer Closing(const ImageT* img, float r, float foreground = 1)
+typename ImageT::Pointer Closing(const ImageT* img, float r, float foreground =
+    1)
 {
   typedef itk::BinaryBallStructuringElement< typename ImageT::PixelType,
       ImageT::ImageDimension > Structure;
@@ -185,7 +189,8 @@ typename ImageT::Pointer Closing(const ImageT* img, float r, float foreground = 
   DispatchFilterOutput(morph, typename ImageT::Pointer);
 }
 template< class ImageT >
-typename ImageT::Pointer Opening(const ImageT* img, float r, float foreground = 1)
+typename ImageT::Pointer Opening(const ImageT* img, float r, float foreground =
+    1)
 {
   typedef itk::BinaryBallStructuringElement< typename ImageT::PixelType,
       ImageT::ImageDimension > Structure;
@@ -221,6 +226,21 @@ typename ImageT::RegionType ImageLargestNonZeroRegion(const ImageT* image)
       imageMaskSpatialObject->GetAxisAlignedBoundingBoxRegion();
 
   return boundingBoxRegion;
+}
+
+template< class ImageT >
+typename ImageT::Pointer Duplicate(const ImageT* image)
+{
+  typename ImageT::Pointer output = ImageT::New();
+  output->CopyInformation(image);
+  output->SetRequestedRegion(image->GetRequestedRegion());
+  output->SetBufferedRegion(image->GetBufferedRegion());
+  output->Allocate();
+  typename ImageT::RegionType region =
+      image->GetLargestPossibleRegion();
+  itk::ImageAlgorithm::Copy(image, output.GetPointer(), region,
+                       region);
+  return output;
 }
 
 template< class ImageT >
@@ -318,24 +338,22 @@ typename ImageT2::Pointer Cast(const ImageT* img1)
   DispatchFilterOutput(castFilter, typename ImageT2::Pointer);
 }
 
-
-template<class HistIteratorT>
-float histogramMode(HistIteratorT iter,  HistIteratorT iterEnd)
+template< class HistIteratorT >
+float histogramMode(HistIteratorT iter, HistIteratorT iterEnd)
 {
   float maxFreq = 0;
   float maxFreqIntensity = 0;
   while (iter != iterEnd)
   {
-    if(maxFreq < iter.GetFrequency())
+    if (maxFreq < iter.GetFrequency())
     {
       maxFreqIntensity = iter.GetMeasurementVector()[0];
-      maxFreq =  iter.GetFrequency();
+      maxFreq = iter.GetFrequency();
     }
     ++iter;
   }
   return maxFreqIntensity;
 }
-
 
 }  // namespace util
 
