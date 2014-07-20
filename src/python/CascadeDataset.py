@@ -26,9 +26,6 @@ parser.add_argument('--model-dir', default='.', help='Directory where the model 
 parser.add_argument('--mode' , choices=['train', 'test'] , help='Mode to run the pipeline')
 
 parser.add_argument('--radius', default=1, help='Radius of local histogram')
-parser.add_argument('--min-bin', default=0, help='Value correspond to histogram minimum bin')
-parser.add_argument('--max-bin', default=1, help='Value correspond to histogram maximum bin')
-parser.add_argument('--num-bin', default=10, help='Number of bins in local histogram')
 
 parser.add_argument('--extra', default="", help='Extrapipeline control parameter to pass on')
 
@@ -39,8 +36,6 @@ logger, logger_mutex = ruffus.cmdline.setup_logging (__name__, options.log_file,
 import cascade
 
 print cascade.Copyright()
-
-
 
 ###############################################################################
 # Bring each sequence into the pipeline
@@ -57,9 +52,6 @@ def originalImagesParam():
                      'brain_mask_space':options.brain_mask_space,
                      'brain-mask' : next(cascade.util.findFile(subjectDir, options.brain_mask), None),
                      'radius' : options.radius,
-                     'min_bin' : options.min_bin,
-                     'max_bin' : options.max_bin,
-                     'num_bin' : options.num_bin,
                      }
         if options.calculation_space:
             inputArgs['calculation_space'] = options.calculation_space
@@ -72,13 +64,13 @@ def originalImagesParam():
             if options.mode == 'test':
                 expectedOutputs.append(os.path.join(inputArgs['root'], 'image', inputArgs['calculation_space'].upper(), s.upper()+'.pvalue.nii.gz'))
             else:
-                expectedOutputs.append(os.path.join(inputArgs['root'], 'image', 'MNI', s.upper()+'.hist.nii.gz'))
+                expectedOutputs.append(os.path.join(inputArgs['root'], 'image', 'STD', s.upper()+'.feature.nii.gz'))
         
             
         if options.mode == 'test':
             inputArgs['model_dir'] = options.model_dir
         else:
-            expectedOutputs.append(os.path.join(inputArgs['root'], 'image', 'MNI', 'brainTissueSegmentation.nii.gz'))
+            expectedOutputs.append(os.path.join(inputArgs['root'], 'image', 'STD', 'brainTissueSegmentation.nii.gz'))
 
         yield [inputArgs, expectedOutputs, options.extra.split()]
         
@@ -89,7 +81,7 @@ def originalImages(input, output, extra=[]):
     tbl = string.maketrans('_', '-')
     args = [os.path.join(os.path.dirname(__file__), 'Cascade.py')]
     for arg, value in input.iteritems():
-        args.extend(['--' + arg.translate(tbl), str(value)])
+        if value: args.extend(['--' + arg.translate(tbl), str(value)])
     args.extend(extra)
     cascade.binary_proxy.run(sys.executable, args)
 
