@@ -127,27 +127,31 @@ int main(int argc, char *argv[])
 
     spread = hist->GetOutput()->Quantile(0, 0.75)
         - hist->GetOutput()->Quantile(0, 0.25);
+
     wmlThresh = CU::histogramMode(hist->GetOutput()->Begin(),
                                   hist->GetOutput()->End())
-                + spread * alpha * (wmlMode > wmMode ? 1 : -1);
-
+                + spread * alpha;
+    std::cout << CU::histogramMode(hist->GetOutput()->Begin(),
+                                   hist->GetOutput()->End())
+    << "+" << spread << "x" << alpha << "=" << wmlThresh << std::endl;
   }
   ClassifidImageType::Pointer LesionProb = CU::MultiplyConstant(
       LesionMask.GetPointer(), 0);
+
   const unsigned int MaximumLevels = 5;
   for (unsigned int level = 0; level < MaximumLevels; level++)
   {
-
     typedef itk::DiscreteGaussianImageFilter< ImageType, ImageType > SmoothFilterType;
     SmoothFilterType::Pointer smoother = SmoothFilterType::New();
-    smoother->SetInput(CU::Mask< ImageType, ClassifidImageType >(subjectImg, TotalWMMask));
+    smoother->SetInput(
+        CU::Mask< ImageType, ClassifidImageType >(subjectImg, TotalWMMask));
     smoother->SetVariance(level * variance);
     ImageType::Pointer levelImg = CU::GraftOutput< SmoothFilterType >(smoother);
 
     typedef itk::BinaryThresholdImageFilter< ImageType, ClassifidImageType > ThresholdType;
     ThresholdType::Pointer thresh = ThresholdType::New();
     thresh->SetInput(levelImg);
-    if (wmlMode > wmMode)
+    if (alpha > 0)
     {
       thresh->SetLowerThreshold(wmlThresh);
     }

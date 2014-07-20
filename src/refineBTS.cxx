@@ -24,7 +24,6 @@
 #include "itkDiscreteGaussianImageFilter.h"
 
 #include "imageHelpers.h"
-
 namespace CU = cascade::util;
 
 int main(int argc, char *argv[])
@@ -68,6 +67,7 @@ int main(int argc, char *argv[])
   ClassifidImageType::Pointer WMMask;
   ClassifidImageType::Pointer LesionMask;
   ClassifidImageType::Pointer TotalWMMask;
+  ClassifidImageType::Pointer WMGMMask;
 
   const unsigned int nComp = subjectImg->GetNumberOfComponentsPerPixel();
   const unsigned int hSize = 100;
@@ -100,6 +100,88 @@ int main(int argc, char *argv[])
     LesionMask = CU::GraftOutput< EqualClassificationFilterType >(eqFilter);
     TotalWMMask = CU::Add< ClassifidImageType, ClassifidImageType >(WMMask,
                                                                     LesionMask);
+    WMGMMask = CU::Add< ClassifidImageType, ClassifidImageType >(GMMask,
+                                                                 TotalWMMask);
+  }
+
+  /*
+   * We should create a temporary tissue segmentation so that:
+   *  # Possible WML in GM is 4
+   *  # WM and WML is 3
+   *  # GM is 2
+   *  # CSF is 1
+   */
+  ClassifidImageType::Pointer newBTS = CU::Duplicate< ClassifidImageType >(
+      brainTissueImg);
+  newBTS = CU::Subtract< ClassifidImageType, ClassifidImageType >(newBTS,
+                                                                  LesionMask);
+
+  ClassifidImageType::Pointer lesionInGM;
+  if (true)
+  {
+    WeightedHistogramType::Pointer hist = WeightedHistogramType::New();
+    hist->SetAutoMinimumMaximum(true);
+    hist->SetHistogramSize(size);
+    hist->SetInput(subjectImg);
+    hist->SetWeightImage(
+        CU::MultiplyConstant< ClassifidImageType >(WMGMMask, 100).GetPointer());
+    hist->Update();
+    const float mode = CU::histogramMode(hist->GetOutput()->Begin(),
+                                         hist->GetOutput()->End());
+    const float spread = hist->GetOutput()->Quantile(0, 0.75)
+        - hist->GetOutput()->Quantile(0, 0.25);
+
+    const float wmlThresh = mode + 1.5 * spread * alpha;
+
+    const unsigned int MaximumLevels = 5;
+    const float variance = 2;
+    lesionInGM = ClassifidImageType::New();
+    lesionInGM->CopyInformation(subjectImg);
+    lesionInGM->SetLargestPossibleRegion(
+        subjectImg->GetLargestPossibleRegion());
+    lesionInGM->SetRequestedRegion(subjectImg->GetRequestedRegion());
+    lesionInGM->SetBufferedRegion(subjectImg->GetBufferedRegion());
+    lesionInGM->Allocate();
+    lesionInGM->FillBuffer(0);
+
+    for (unsigned int level = 0; level < MaximumLevels; level++)
+    {
+      typedef itk::DiscreteGaussianImageFilter< ImageType, ImageType > SmoothFilterType;
+      SmoothFilterType::Pointer smoother = SmoothFilterType::New();
+      smoother->SetInput(
+          CU::Mask< ImageType, ClassifidImageType >(subjectImg, WMGMMask));
+      smoother->SetVariance(level * variance);
+      ImageType::Pointer levelImg = CU::GraftOutput< SmoothFilterType >(
+          smoother);
+
+      typedef itk::BinaryThresholdImageFilter< ImageType, ClassifidImageType > ThresholdType;
+      ThresholdType::Pointer thresh = ThresholdType::New();
+      thresh->SetInput(levelImg);
+      if (alpha > 0)
+      {
+        thresh->SetLowerThreshold(wmlThresh);
+      }
+      else
+      {
+        thresh->SetUpperThreshold(wmlThresh);
+      }
+      ClassifidImageType::Pointer LevelLesionMask = CU::Mask<
+          ClassifidImageType, ClassifidImageType >(WMGMMask,
+                                                   thresh->GetOutput());
+
+      lesionInGM = CU::Add< ClassifidImageType, ClassifidImageType >(
+          lesionInGM, LevelLesionMask);
+    }
+
+    typedef itk::BinaryThresholdImageFilter< ClassifidImageType,
+        ClassifidImageType > CThresholdType;
+    CThresholdType::Pointer cThresh = CThresholdType::New();
+    cThresh->SetInput(lesionInGM);
+    cThresh->SetLowerThreshold(2);
+    cThresh->Update();
+
+    lesionInGM = CU::Mask< ClassifidImageType, ClassifidImageType >(
+        GMMask, cThresh->GetOutput());
   }
 
   /*
@@ -107,59 +189,9 @@ int main(int argc, char *argv[])
    * surrounded by WM.
    */
   {
-    typedef itk::VotingBinaryIterativeHoleFillingImageFilter< ClassifidImageType > HoleFillingType;
-    HoleFillingType::Pointer holeFilling = HoleFillingType::New();
-    holeFilling->SetInput(TotalWMMask);
-    holeFilling->SetBackgroundValue(0);
-    holeFilling->SetForegroundValue(1);
-    holeFilling->SetMaximumNumberOfIterations(100);
-    holeFilling->SetRadius(
-        CU::GetPhysicalRadius< ClassifidImageType >(TotalWMMask, 1));
-
-    holeFilling->Update();
-    ClassifidImageType::Pointer GMLMask = CU::Mask< ClassifidImageType,
-        ClassifidImageType >(GMMask, holeFilling->GetOutput());
-
     /*
-     * Calculate WML threshold for GM
+     * Relabel doubtful area to 4 for inspection
      */
-    WeightedHistogramType::Pointer hist = WeightedHistogramType::New();
-    hist->SetAutoMinimumMaximum(true);
-    hist->SetHistogramSize(size);
-    hist->SetInput(subjectImg);
-    hist->SetWeightImage(
-        CU::MultiplyConstant< ClassifidImageType >(GMMask, 100).GetPointer());
-    hist->Update();
-    const float wmMode = CU::histogramMode(hist->GetOutput()->Begin(),
-                                           hist->GetOutput()->End());
-    const float spread = hist->GetOutput()->Quantile(0, 0.75)
-        - hist->GetOutput()->Quantile(0, 0.25);
-
-    const float wmlThresh = wmMode + spread * alpha;
-
-    typedef itk::BinaryThresholdImageFilter< ImageType, ClassifidImageType > ThresholdType;
-    ThresholdType::Pointer thresh = ThresholdType::New();
-    thresh->SetInput(subjectImg);
-    thresh->SetLowerThreshold(wmlThresh);
-    ClassifidImageType::Pointer lesionInGM = thresh->GetOutput();
-    lesionInGM = CU::Opening< ClassifidImageType >(lesionInGM, 0.5, 1);
-    lesionInGM = CU::Mask< ClassifidImageType, ClassifidImageType >(GMLMask,
-                                                                    lesionInGM);
-
-    CU::WriteImage< ClassifidImageType >("gmlesion_mask.nii.gz", lesionInGM);
-
-    /*
-     * Create a temporary tissue segmentation so that:
-     *  # Possible WML in GM is 4
-     *  # WM and WML is 3
-     *  # GM is 2
-     *  # CSF is 1
-     */
-    ClassifidImageType::Pointer newBTS = CU::MultiplyConstant<
-        ClassifidImageType >(TotalWMMask, 3);
-    newBTS = CU::Add< ClassifidImageType, ClassifidImageType >(newBTS, CSFMask);
-    newBTS = CU::Add< ClassifidImageType, ClassifidImageType >(
-        newBTS, CU::MultiplyConstant< ClassifidImageType >(GMMask, 2));
     newBTS = CU::Add< ClassifidImageType, ClassifidImageType >(
         newBTS, CU::MultiplyConstant< ClassifidImageType >(lesionInGM, 2));
 
@@ -207,13 +239,20 @@ int main(int argc, char *argv[])
     std::cerr << totalNumberOfChanges << " pixels changed in "
               << currentNumberOfIterations << " iterations." << std::endl;
 
+    /*
+     * Revert unchanged doubtful labels to GM
+     */
     EqualClassificationFilterType::Pointer eqFilter =
         EqualClassificationFilterType::New();
     eqFilter->SetInput1(newBTS);
     eqFilter->SetConstant2(4);
+    eqFilter->GetFunctor().SetForegroundValue(2);
     newBTS = CU::Subtract< ClassifidImageType, ClassifidImageType >(
-        newBTS, CU::GraftOutput< EqualClassificationFilterType >(eqFilter));
+        newBTS, eqFilter->GetOutput());
 
+    /*
+     * All area with changed label might be a lesion
+     */
     NotEqualClassificationFilterType::Pointer neqFilter =
         NotEqualClassificationFilterType::New();
     neqFilter->SetInput1(newBTS);
@@ -223,6 +262,9 @@ int main(int argc, char *argv[])
     brainTissueImg = CU::Add< ClassifidImageType, ClassifidImageType >(
         newBTS, LesionMask);
 
+    /*
+     * Smooth the WM and GM segmentation
+     */
     typedef itk::VotingBinaryImageFilter< ClassifidImageType, ClassifidImageType > VotingFilterType;
     VotingFilterType::Pointer filter = VotingFilterType::New();
     filter->SetRadius(
