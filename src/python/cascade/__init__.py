@@ -32,7 +32,6 @@ logger_mutex = DummyMutex()
 from cascade import config
 from cascade import util
 from cascade import binary_proxy
-from cascade import logic
 
 class CascadeFileManager(object):
 
@@ -147,59 +146,3 @@ class CascadeFileManager(object):
     def getQCNname(self, filename, extension=''):
         util.ensureDirectory(self.qcDir)
         return os.path.join(self.qcDir, filename)+extension
-    
-extents={
-    'FLAIR':{
-               1:(35, 156),
-               2:(133, 164),
-               3:(123, 151),
-            },
-       'T1':{
-               1:(38, 204),
-               2:(195, 298),
-               3:(313, 393),
-            },
-       'T2':{
-               1:(35, 156),
-               2:(133, 164),
-               3:(123, 151),
-            },
-       'PD':{
-               1:(38, 204),
-               2:(195, 298),
-               3:(313, 393),
-            }
-    }
-
-evidentRules = {
-                'FLAIR':{
-                         'light':True,
-                         'wm_deviation':1,
-                         'gm_deviation':0
-                         },
-                'T2':{
-                         'light':True,
-                         'wm_deviation':1,
-                         'gm_deviation':0
-                      },
-                'T1':{
-                         'light':False,
-                         'wm_deviation':0.1,
-                         'gm_deviation':0
-                      },
-                }
-
-modelFreeRules = {
-                'FLAIR':{
-                         'light':True,
-                         'wm_deviation':2,
-                         },
-                'T2':{
-                         'light':True,
-                         'wm_deviation':2,
-                      },
-                'T1':{
-                         'light':False,
-                         'wm_deviation':3,
-                      },
-                  }
