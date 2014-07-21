@@ -29,7 +29,7 @@ parser.add_argument('-d', '--model-dir' , help='Directory where the model locate
 parser.add_argument('--radius', default=1, help='Radius of local histogram')
 
 parser.add_argument('--simple' , action='store_true' , help='Mode to run the pipeline')
-parser.add_argument('--spread', default=2, help='Relative brightness/darkness of WML. Can be tuned for each dataset.')
+parser.add_argument('--spread', default=2, help='Relative brightness/darkness of WML. It controls how aggressive the pipeline will be. Higher spread, smaller lesion size.')
 
 options = parser.parse_args()
 
