@@ -45,7 +45,7 @@ Any scientific work derived from the result of this software or its modification
 
 Copyright
 -------
-Copyright (C) 2013 [Soheil Damangir](http://www.linkedin.com/in/soheildamangir) - All Rights Reserved
+Copyright (C) 2013-2014 [Soheil Damangir](http://www.linkedin.com/in/soheildamangir) - All Rights Reserved
 
 License
 -------
