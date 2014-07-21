@@ -111,6 +111,8 @@ cascadeCommands = ['linRegister',
                    'refineBTS',
                    'modelFree',
                    'localFeature',
+                   'ks',
+                   'combine',
                    ]
 
 def cascade_run(cascadecmd, cascadeargs, output_files = None):

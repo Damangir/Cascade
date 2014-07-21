@@ -40,3 +40,9 @@ target_link_libraries(modelFree ${ITK_LIBRARIES})
 
 add_executable(localFeature localFeature.cxx)
 target_link_libraries(localFeature ${ITK_LIBRARIES})
+
+add_executable(combine combine.cxx)
+target_link_libraries(combine ${ITK_LIBRARIES})
+
+add_executable(ks ks.cxx)
+target_link_libraries(ks ${ITK_LIBRARIES})

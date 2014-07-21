@@ -69,7 +69,7 @@ calculationBase = inputImages[calculationSpace]
 cascadeManager = cascade.CascadeFileManager(options.root)
 cascadeManager.calcSpace = calculationSpace
 
-if testMode:
+if False:
     for i in product(inputImages.keys(), cascadeManager.brainTissueNames.values()):
         modelName = os.path.join(options.model_dir, '.'.join(i) + '.model.nii.gz')
         print modelName
@@ -444,21 +444,32 @@ if testMode:
                        cascadeManager.imageInSpace(cascadeManager.calcSpace + '.nii.gz', cascadeManager.calcSpace),
                        cascadeManager.transITKName('std', cascadeManager.calcSpace),
                        ),
-                      cascadeManager.imageInSpace(modelName, os.path.join(cascadeManager.calcSpace, 'model')),
-                      cascadeManager
+                      cascadeManager.imageInSpace(modelName, os.path.join(cascadeManager.calcSpace, 'model'))
                       ]
             yield params
 
     @ruffus.follows(linearRegistrationToStandard)
     @ruffus.files(registerModelParam)
-    def registerModel(input, output, manager):
+    def registerModel(input, output):
         fixedImage = input[1]
         transferFile = input[2]
         movingImage = input[0]
         movedImage = output
         cascade.util.ensureDirPresence(output)
         cascade.binary_proxy.cascade_run('resampleVector', [fixedImage, movingImage, movedImage, transferFile], movedImage)
-        
+
+    @ruffus.collate(registerModel,
+                    ruffus.regex(r'.*/(.*)\.(.*).model.nii.gz'),
+                    cascadeManager.imageInSpace(r'\1.model.nii.gz', os.path.join(cascadeManager.calcSpace, 'model')),
+                    cascadeManager)    
+    def createIndividualModel(input, output, manager):
+        map = manager.imageInSpace('brainTissueSegmentation.nii.gz', manager.calcSpace)
+        input = [
+                 filter(lambda x:'CSF' in os.path.basename(x), input)[0],
+                 filter(lambda x:'GM' in os.path.basename(x), input)[0],
+                 filter(lambda x:'WM' in os.path.basename(x), input)[0],
+                 ]
+        cascade.binary_proxy.cascade_run('combine', [map, output] + inputs, output)
 ###############################################################################
 # Kolmogorov Smirnov to find p-value of each image with respect to model 
 ###############################################################################
@@ -467,11 +478,7 @@ if testMode:
                     cascadeManager.imageInSpace(r'\1.pvalue.nii.gz', cascadeManager.calcSpace),
                     cascadeManager)
     def KolmogorovSmirnov(input, output, manager):
-        img = input[0]
-        bts = manager.imageInSpace('brainTissueSegmentation.nii.gz', manager.calcSpace);
-        tissueModel = input[1]
-        tissueIndex = 1
-        cascade.binary_proxy.cascade_run('ks', [img, bts, tissueModel, tissueIndex, output])
+        cascade.binary_proxy.cascade_run('ks', [input[0], input[1], output], output)
 
 if __name__ == '__main__':
     ruffus.cmdline.run (options)
