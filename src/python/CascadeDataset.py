@@ -16,20 +16,23 @@ parser.add_argument('--t1' , required=True , help='T1 image pattern')
 parser.add_argument('--flair' , help='FLAIR image pattern')
 parser.add_argument('--pd' , help='PD image pattern')
 parser.add_argument('--t2' , help='T2 image pattern')
-parser.add_argument('--brain-mask', required=True, help='Brain mask pattern')
+parser.add_argument('--brain-mask', help='Brain mask pattern')
 
-parser.add_argument('--brain-mask-space', required=True, choices=['T1', 'T2', 'FLAIR', 'PD'] , help='Brain mask space')
-parser.add_argument('--calculation-space', choices=['T1', 'T2', 'FLAIR', 'PD'], help='Calculation space')
+parser.add_argument('--brain-mask-space', choices=['T1', 'T2', 'FLAIR', 'PD'] , help='Brain mask space')
+parser.add_argument('--calculation-space',required=True, choices=['T1', 'T2', 'FLAIR', 'PD'], help='Calculation space')
 
 parser.add_argument('--model-dir', default='.', help='Directory where the model located')
 
-parser.add_argument('--mode' , choices=['train', 'test'] , help='Mode to run the pipeline')
+parser.add_argument('--mode' , choices=['train', 'test', 'simple'] , help='Mode to run the pipeline')
 
 parser.add_argument('--radius', default=1, help='Radius of local histogram')
 
 parser.add_argument('--extra', default="", help='Extrapipeline control parameter to pass on')
 
 options = parser.parse_args()
+
+if options.brain_mask and not options.brain_mask_space:
+    raise Exception('Option --brain-mask-space should be set.')
 
 logger, logger_mutex = ruffus.cmdline.setup_logging (__name__, options.log_file, options.verbose)
 
@@ -44,35 +47,39 @@ def allways_run(*args, **kwargs):
     return True, "Must run"
 
 def originalImagesParam():
+    extraInputs = options.extra.split()
+    if options.mode == 'simple':
+        extraInputs.append('--simple')
     seqs = filter(lambda x: getattr(options,x), ['t1', 't2', 'pd', 'flair'])
     for subjectDir in cascade.util.findDir(options.source, options.subject):
         subjectID = os.path.basename(subjectDir)
         inputArgs = {
                      'root' : os.path.join(options.target, subjectID),
-                     'brain_mask_space':options.brain_mask_space,
-                     'brain-mask' : next(cascade.util.findFile(subjectDir, options.brain_mask), None),
+                     'calculation_space':options.calculation_space,
                      'radius' : options.radius,
                      }
-        if options.calculation_space:
-            inputArgs['calculation_space'] = options.calculation_space
-        else:
-            inputArgs['calculation_space'] = inputArgs['brain_mask_space']
+        if options.brain_mask and options.brain_mask_space:
+            inputArgs['brain_mask_space'] = options.brain_mask_space,
+            inputArgs['brain-mask']= next(cascade.util.findFile(subjectDir, options.brain_mask), None),
 
         expectedOutputs = []
+        if options.mode == 'simple':
+            expectedOutputs.append(os.path.join(inputArgs['root'], 'image', inputArgs['calculation_space'].upper(), 'model.free.wml.nii.gz'))
+        elif options.mode == 'test':
+            expectedOutputs.append(os.path.join(inputArgs['root'], 'image', inputArgs['calculation_space'].upper(), 'wml.pvalue.nii.gz'))
         for s in seqs:
             inputArgs[s] = next(cascade.util.findFile(subjectDir, getattr(options,s)), None)
             if options.mode == 'test':
                 expectedOutputs.append(os.path.join(inputArgs['root'], 'image', inputArgs['calculation_space'].upper(), s.upper()+'.pvalue.nii.gz'))
-            else:
+            elif options.mode == 'train':
                 expectedOutputs.append(os.path.join(inputArgs['root'], 'image', 'STD', s.upper()+'.feature.nii.gz'))
         
-            
         if options.mode == 'test':
             inputArgs['model_dir'] = options.model_dir
-        else:
+        elif options.mode == 'train':
             expectedOutputs.append(os.path.join(inputArgs['root'], 'image', 'STD', 'brainTissueSegmentation.nii.gz'))
 
-        yield [inputArgs, expectedOutputs, options.extra.split()]
+        yield [inputArgs, expectedOutputs, extraInputs]
         
 @ruffus.files(originalImagesParam)
 @ruffus.check_if_uptodate(allways_run)
@@ -111,8 +118,8 @@ def trainParam():
     yield [virtParam, outputs]
         
         
-@ruffus.files(trainParam)
-@ruffus.follows(originalImages)
+#@ruffus.files(trainParam)
+#@ruffus.follows(originalImages)
 def train(input, output):
     filter(cascade.util.ensureAbsence, input)
     for subjID, params in input.iteritems():

@@ -13,23 +13,39 @@ import ruffus
 print cascade.Copyright()
 parser = ruffus.cmdline.get_argparse(description='Cascade academics')
 
-parser.add_argument('-r', '--root' , required=True , help='Image root directory')
+parser.add_argument('-r', '--root', required=True,
+                    help='Image root directory')
 
-parser.add_argument('-t', '--t1' , required=True , help='T1 image')
-parser.add_argument('-f', '--flair' , help='FLAIR image')
-parser.add_argument('-p', '--pd' , help='PD image')
-parser.add_argument('-s', '--t2' , help='T2 image')
+parser.add_argument('-t', '--t1' , required=True,
+                    help='T1 image')
+parser.add_argument('-f', '--flair',
+                    help='FLAIR image')
+parser.add_argument('-p', '--pd',
+                    help='PD image')
+parser.add_argument('-s', '--t2',
+                    help='T2 image')
 
-parser.add_argument('-b', '--brain-mask' , help='Brain mask')
-parser.add_argument('-m', '--brain-mask-space' , choices=['T1', 'T2', 'FLAIR', 'PD'] , help='Brain mask space')
-parser.add_argument('-c', '--calculation-space' , choices=['T1', 'T2', 'FLAIR', 'PD'], default='T1' , help='Calculation space')
+parser.add_argument('-b', '--brain-mask',
+                    help='Brain mask')
+parser.add_argument('-m', '--brain-mask-space',
+                    choices=['T1', 'T2', 'FLAIR', 'PD'],
+                    help='Brain mask space')
+parser.add_argument('-c', '--calculation-space',
+                    choices=['T1', 'T2', 'FLAIR', 'PD'], default='T1',
+                    help='Calculation space')
 
-parser.add_argument('-d', '--model-dir' , help='Directory where the model located')
+parser.add_argument('-d', '--model-dir',
+                    help='Directory where the model located')
 
-parser.add_argument('--radius', default=1, help='Radius of local histogram')
+parser.add_argument('--radius', default=1,
+                    help='Radius of local histogram in millimeter')
 
-parser.add_argument('--simple' , action='store_true' , help='Mode to run the pipeline')
-parser.add_argument('--spread', default=2, help='Relative brightness/darkness of WML. It controls how aggressive the pipeline will be. Higher spread, smaller lesion size.')
+parser.add_argument('--simple' , action='store_true',
+                    help='Mode to run the pipeline')
+parser.add_argument('--spread', default=2,
+                    help='Relative brightness/darkness of WML. It controls how'
+                         ' aggressive the pipeline will be. Higher spread, '
+                         'smaller lesion size.')
 
 options = parser.parse_args()
 
@@ -69,7 +85,7 @@ calculationBase = inputImages[calculationSpace]
 cascadeManager = cascade.CascadeFileManager(options.root)
 cascadeManager.calcSpace = calculationSpace
 
-if False:
+if testMode:
     for i in product(inputImages.keys(), cascadeManager.brainTissueNames.values()):
         modelName = os.path.join(options.model_dir, '.'.join(i) + '.model.nii.gz')
         print modelName
