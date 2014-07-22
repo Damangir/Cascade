@@ -37,7 +37,7 @@ You can check availability of these packages on your computer (on Unix-like comp
 ~$ make --version
 ~$ cmake --version
 ~$ python --version
-~$ find / -name "ITKConfigVersion.cmake" -exec head {} \; 2>/dev/null
+~$ find / -name "ITKConfigVersion.cmake" -print -exec head -n1 {} \; 2>/dev/null
 ```
 
 Once you obtain the Cascade, you can install it via:
