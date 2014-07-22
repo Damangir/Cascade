@@ -26,16 +26,32 @@ Install
 In order to install the software you need to have the following application installed on your computer.
 
  * Modern C++ compiler (gcc is recommended)
- * cmake 2.8+ (cmake.org)
  * make
+ * cmake 2.8+ (cmake.org)
+ * Python 2.7+
  * Insight Toolkit 4.0+ (itk.org)
 
-You can check availability of these packages on your computer (on Unix-like computers e.g. Mac and Ubuntu)
+You can check availability of these packages on your computer (on Unix-like computers e.g. Mac and Ubuntu). Please note the last command might take a few minutes to run.
 ```bash
 ~$ echo -ne "C++ compiler: "; command -v cc||  command -v gcc||  command -v clang||  command -v c++||  echo "No C++ compiler found"
 ~$ make --version
 ~$ cmake --version
+~$ python --version
+~$ find / -name "ITKConfigVersion.cmake" -exec head {} \; 2>/dev/null
 ```
+
+Once you obtain the Cascade, you can install it via:
+```bash
+~$ cd Cascade
+Cascade$ ls
+README.md   copyright.txt   data   license.png   license.txt   src
+Cascade$ mkdir build
+Cascade$ cd build
+build$ cmake ../src
+build$ make
+build$ python ../src/python/Cascade.py -h
+```
+
 
 Citation
 -------
