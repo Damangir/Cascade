@@ -11,6 +11,9 @@ ELSE(ITK_FOUND)
 	MESSAGE(FATAL_ERROR"ITK not found. Please set ITK_DIR.")
 ENDIF(ITK_FOUND)
 
+add_executable(relabel relabel.cxx)
+target_link_libraries(relabel ${ITK_LIBRARIES})
+
 add_executable(linRegister linRegister.cxx)
 target_link_libraries(linRegister ${ITK_LIBRARIES})
 
