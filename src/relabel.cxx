@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
   {
     LabelPixelType origLab;
     LabelPixelType newLab;
-    std::ifstream file(labelMap);
+    std::ifstream file(labelMap.c_str());
     while (file >> origLab >> newLab)
     {
       std::cout << "Convert " << origLab << " to " << newLab << std::endl;
