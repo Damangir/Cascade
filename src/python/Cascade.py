@@ -358,8 +358,8 @@ def modelFreeParam():
                 cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', cascadeManager.calcSpace),
                 ]
     btsParams = [
-                 2,  # variance (for smoothing in pyramid creation)
-                 options.radius,  # alpha (spread, its sign controls whether MWL is dark or bright.)
+                 options.radius, # variance (for smoothing in pyramid creation)
+                 options.spread, # alpha (spread, its sign controls whether MWL is dark or bright.)
                  ]
     outImages = [
                 cascadeManager.imageInSpace('model.free.wml.nii.gz', cascadeManager.calcSpace),
