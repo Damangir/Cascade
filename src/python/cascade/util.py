@@ -23,7 +23,28 @@ def gzipped(infile, outfile=None, rem=True):
         os.remove(infile)
         
 def ensureAbsence(fname):
-    if fname and os.path.exists(fname): os.remove(fname)
+    if not fname:
+        return
+    if type(fname) is type(''):
+        if os.path.exists(fname): os.remove(fname)
+    else:
+        for fn in fname:
+            if os.path.exists(fn): os.remove(fn)
+
+def which(program):
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+    return None
 
 def ensureDirPresence(fname):
     directory_name = os.path.dirname(fname)

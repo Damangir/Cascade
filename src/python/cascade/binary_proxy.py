@@ -20,8 +20,9 @@ def bash_source(src, pre=''):
 def check_output(cmd, args, output_files=None, silent=False, just_print=False):
     args = list(map (str, args))
     command_txt = ' '.join([cmd] + args)
+    
     if just_print:
-        print command_txt
+        cascade.logger.debug(command_txt)
         return ''
     
     try:        
@@ -35,11 +36,9 @@ def check_output(cmd, args, output_files=None, silent=False, just_print=False):
         return output
     except subprocess.CalledProcessError as e:
         if not silent: cascade.logger.error('Error running %s', ' '.join([cmd] + args) )
-        if type(output_files) is type(''):
-            ensureAbsence(output_files)
-        else:
-            for f in output_files:
-                ensureAbsence(output_files)
+        cascade.util.ensureAbsence(output_files)
+    except OSError as e:
+        cascade.logger.error('%s: [OSError %d] %s', command_txt, e.errno, e.stderror)
     return None
 
 def run(cmd, args, output_files = None, silent=False, just_print=False):
@@ -50,7 +49,7 @@ FSLPRE=''
 FSLFOUND=False
 FSLBIN=''
 for pre in ['', 'fsl5.0-']:
-    fslinfo_full = check_output('command', ['-v', pre+'fslinfo'], silent=True) 
+    fslinfo_full = cascade.util.which(pre+'fslinfo') 
     if fslinfo_full != None:
         FSLPRE=pre
         FSLFOUND=True
@@ -87,7 +86,7 @@ cascadeCommands = ['linRegister',
 
 for cascadecmd in cascadeCommands:
     cascadeBinary=os.path.join(cascade.config.ExecDir, cascadecmd)
-    if not run('command', ['-v', cascadeBinary], silent=True):
+    if not cascade.util.which(cascadeBinary):
         raise Exception("Cascade command {} not found".format(cascadecmd))
 
 cascade.logger.info('Cascade location: %s', cascade.config.ExecDir)
