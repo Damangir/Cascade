@@ -17,10 +17,13 @@ def bash_source(src, pre=''):
     
     proc.communicate()
 
-def check_output(cmd, args, output_files=None, silent=False):
+def check_output(cmd, args, output_files=None, silent=False, just_print=False):
     args = list(map (str, args))
     command_txt = ' '.join([cmd] + args)
-    return ''
+    if just_print:
+        print command_txt
+        return ''
+    
     try:        
         tc = time.time()
         output=subprocess.check_output([cmd] + args, stderr=sys.stdout, env=os.environ).strip()
@@ -39,8 +42,8 @@ def check_output(cmd, args, output_files=None, silent=False):
                 ensureAbsence(output_files)
     return None
 
-def run(cmd, args, output_files = None, silent=False):
-    output = check_output(cmd, args, output_files=output_files, silent=silent)
+def run(cmd, args, output_files = None, silent=False, just_print=False):
+    output = check_output(cmd, args, output_files=output_files, silent=silent, just_print=just_print)
     return None != output
 
 FSLPRE=''
