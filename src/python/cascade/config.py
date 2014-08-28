@@ -16,12 +16,8 @@ else:
         raise Exception("Can not locate Cascade binaries.")
 
 
-HistDir=os.path.join(DataDir, 'histograms')
-AtlasDir=os.path.join(DataDir, 'atlas')
+
 StandardDir=os.path.join(DataDir, 'std')
-MaskDir=os.path.join(DataDir, 'mask')
-ReportDir=os.path.join(DataDir, 'report')
-ConfigDir=os.path.join(DataDir, 'config')
 
 StandardImg =os.path.join(StandardDir, 'MNI152_T1_2mm.nii.gz')
 StandardBrain =os.path.join(StandardDir, 'MNI152_T1_2mm_brain.nii.gz')
@@ -33,5 +29,4 @@ StandardCSF =os.path.join(StandardDir, 'avg152T1_csf.nii.gz')
 if not os.path.exists(StandardImg):
     raise Exception('Can not find standard image.')
 
-FNIRT1mm=os.path.join(ConfigDir, 'T1_2_MNI152_1mm.conf')
-FNIRT2mm=os.path.join(ConfigDir, 'T1_2_MNI152_2mm.conf')
+FreeSurfer_To_BrainTissueSegmentation=os.path.join(DataDir, 'map', 'FS_label.map.txt')

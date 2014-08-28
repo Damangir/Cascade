@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 2.8)
 
-PROJECT(CascadeUtil)
+PROJECT(CascadeAcademic)
 
 SET(CMAKE_BUILD_TYPE DEBUG)
 
-FIND_PACKAGE(ITK REQUIRED)
+FIND_PACKAGE(ITK 4.3 REQUIRED)
 IF(ITK_FOUND)
 	INCLUDE(${ITK_USE_FILE})
 ELSE(ITK_FOUND)
-	MESSAGE(FATAL_ERROR"ITK not found. Please set ITK_DIR.")
+	MESSAGE(FATAL_ERROR"ITK 4.4+ not found. Please set ITK_DIR.")
 ENDIF(ITK_FOUND)
 
 add_executable(relabel relabel.cxx)

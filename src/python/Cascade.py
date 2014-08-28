@@ -1,4 +1,12 @@
+#!/usr/bin/env python
+
 levels = 5
+import sys
+if sys.version_info<(2,7,0):
+    sys.stderr.write("You need python 2.7 or later to run the Cascade.\n")
+    sys.stderr.write("You are using python"+sys.version+".\n")
+    exit(1)
+
 
 import os
 import shutil
@@ -33,6 +41,8 @@ parser.add_argument('-m', '--brain-mask-space',
 parser.add_argument('-c', '--calculation-space',
                     choices=['T1', 'T2', 'FLAIR', 'PD'], default='T1',
                     help='Calculation space')
+
+parser.add_argument('--freesurfer', help='Import freesurfer')
 
 parser.add_argument('-d', '--model-dir',
                     help='Directory where the model located')
@@ -91,14 +101,14 @@ if testMode:
         print modelName
         if not os.path.exists(modelName):
             raise Exception('No model found at {}'.format(modelName))
+
 ###############################################################################
 # Bring each sequence into the pipeline
 ###############################################################################
 def originalImagesParam():
     for imageName, image in inputImages.iteritems():
         params = [image, cascadeManager.imageInSpace(imageName + '.nii.gz', imageName)]
-        yield params
-        
+        yield params        
 @ruffus.files(originalImagesParam)
 def originalImages(input, output):
     cascade.binary_proxy.fsl_run('fslchfiletype', ['NIFTI_GZ', input, output])
