@@ -47,15 +47,18 @@ parser.add_argument('--freesurfer', help='Import freesurfer')
 parser.add_argument('-d', '--model-dir',
                     help='Directory where the model located')
 
-parser.add_argument('--radius', default=1,
-                    help='Radius of local histogram in millimeter')
-
 parser.add_argument('--simple' , action='store_true',
                     help='Mode to run the pipeline')
+
 parser.add_argument('--spread', default=2,
                     help='Relative brightness/darkness of WML. It controls how'
                          ' aggressive the pipeline will be. Higher spread, '
                          'smaller lesion size.')
+
+parser.add_argument('--levels', default=5,
+                    help='Number of levels to evaluate histogram.')
+parser.add_argument('--radius', default=1,
+                    help='Radius of local histogram in millimeter')
 
 options = parser.parse_args()
 
@@ -441,6 +444,7 @@ def modelFreeParam():
     btsParams = [
                  options.radius, # variance (for smoothing in pyramid creation)
                  options.spread, # alpha (spread, its sign controls whether MWL is dark or bright.)
+                 options.levels, # number of levels to evaluate
                  ]
     outImages = [
                 cascadeManager.imageInSpace('model.free.wml.nii.gz', cascadeManager.calcSpace),
@@ -515,7 +519,7 @@ if trainMode:
                                                           manager.imageInSpace('brainTissueSegmentation.nii.gz', 'STD'),
                                                           output,
                                                           options.radius,
-                                                          levels], output)
+                                                          options.levels], output)
 
 if testMode:
 ###############################################################################
@@ -529,7 +533,7 @@ if testMode:
                                                           manager.imageInSpace('brain_mask.nii.gz', manager.calcSpace),
                                                           output,
                                                           options.radius,
-                                                          levels], output)
+                                                          options.levels], output)
 
 ###############################################################################
 # Register normal model to the calculation space

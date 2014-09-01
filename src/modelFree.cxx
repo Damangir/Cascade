@@ -18,8 +18,10 @@ int main(int argc, char *argv[])
   if (argc < 4)
   {
     std::cerr << "Missing Parameters " << std::endl;
-    std::cerr << "Usage: " << argv[0];
-    std::cerr << " image brainTissues output [variance] [alpha]";
+    std::cerr << "Usage: " << argv[0] << std::endl;
+    std::cerr << " image brainTissues output [variance = 2mm] [alpha = 1] [maxlevels = 5]"<< std::endl;
+    std::cerr << "Threshold WMMode + IQR x alpha at different levels. Note: "
+        "pyramid intensities relate to histogram."<< std::endl;
     std::cerr << std::endl;
     return EXIT_FAILURE;
   }
@@ -29,8 +31,10 @@ int main(int argc, char *argv[])
   std::string output(argv[3]);
   float variance = 2;
   float alpha = 1;
+  float maximumLevels = 5;
   if (argc > 4) variance = atof(argv[4]);
   if (argc > 5) alpha = atof(argv[5]);
+  if (argc > 6) maximumLevels = atof(argv[6]);
 
   const unsigned int ImageDimension = 3;
   const unsigned int SpaceDimension = ImageDimension;
@@ -122,14 +126,13 @@ int main(int argc, char *argv[])
   ClassifidImageType::Pointer LesionProb = CU::MultiplyConstant(
       LesionMask.GetPointer(), 0);
 
-  const unsigned int MaximumLevels = 5;
-  for (unsigned int level = 0; level < MaximumLevels; level++)
+  for (float l_variance = 0; l_variance < variance*5; l_variance += (variance*5.0 / maximumLevels))
   {
     typedef itk::DiscreteGaussianImageFilter< ImageType, ImageType > SmoothFilterType;
     SmoothFilterType::Pointer smoother = SmoothFilterType::New();
     smoother->SetInput(
         CU::Mask< ImageType, ClassifidImageType >(subjectImg, TotalWMMask));
-    smoother->SetVariance(level * variance);
+    smoother->SetVariance(l_variance);
     ImageType::Pointer levelImg = CU::GraftOutput< SmoothFilterType >(smoother);
 
     typedef itk::BinaryThresholdImageFilter< ImageType, ClassifidImageType > ThresholdType;

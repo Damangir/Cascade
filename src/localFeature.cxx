@@ -45,11 +45,13 @@ int main(int argc, char *argv[])
           CU::LoadImage< ImageType >(subjectImage),
           CU::LoadImage< ClassifidImageType >(mask)));
 
-  for (unsigned int level = 0; level < levels; level++)
+  unsigned int level=0;
+  for (float l_variance = 0; l_variance < radius*5; l_variance += (radius*5.0 / levels))
   {
-    smoother->SetVariance(level * radius);
+    smoother->SetVariance(l_variance);
     ImageType::Pointer levelImg = CU::GraftOutput< SmoothFilterType >(smoother);
     composeFilter->SetInput(level, levelImg);
+    level++;
   }
 
   CU::WriteImage< VectorImageType >(output, composeFilter->GetOutput());

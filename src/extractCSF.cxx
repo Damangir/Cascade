@@ -13,6 +13,10 @@
 
 namespace CU = cascade::util;
 
+/*
+ * TODO: Current extract CSF is sensitive to small ventricles. Empirical
+ * distribution need to be adjusted.
+ */
 int main(int argc, char *argv[])
 {
   if (argc < 5)
