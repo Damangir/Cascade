@@ -11,6 +11,9 @@ ELSE(ITK_FOUND)
 	MESSAGE(FATAL_ERROR"ITK 4.4+ not found. Please set ITK_DIR.")
 ENDIF(ITK_FOUND)
 
+add_executable(atlas atlas.cxx)
+target_link_libraries(atlas ${ITK_LIBRARIES})
+
 add_executable(relabel relabel.cxx)
 target_link_libraries(relabel ${ITK_LIBRARIES})
 
