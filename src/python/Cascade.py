@@ -330,7 +330,7 @@ if do_WMEstimate:
                       cascadeManager.imageInSpace('norm.mask.nii.gz', cascadeManager.calcSpace),
                       cascadeManager)
     def normalizationMask(input, output, param):
-        cascade.binary_proxy.fsl_run('fslmaths', [input[2], '-mas', output])
+        cascade.binary_proxy.fsl_run('fslmaths', [input, '-bin', output])
     
 
 ###############################################################################
