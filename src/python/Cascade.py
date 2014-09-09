@@ -222,7 +222,8 @@ if options.freesurfer:
     do_BTS = False
     do_BrainExtract = False
     do_WMEstimate = False
-
+    has_atlas = True
+    
     def fsImport():
         inImages = [
                     os.path.join(options.freesurfer, 'mri', 'rawavg.mgz'),
@@ -265,7 +266,6 @@ if options.freesurfer:
         fixedImage = manager.imageInSpace(manager.calcSpace + '.nii.gz', manager.calcSpace)
         transferFile = manager.transITKName(manager.getImageSpace(movingImage), manager.getImageSpace(fixedImage))
         cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile, 'nn'], movedImage)
-        has_atlas = True
 
     @ruffus.transform(ImportFS, ruffus.formatter(),
                       cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace),
