@@ -30,3 +30,4 @@ if not os.path.exists(StandardImg):
     raise Exception('Can not find standard image.')
 
 FreeSurfer_To_BrainTissueSegmentation=os.path.join(DataDir, 'map', 'FS_label.map.txt')
+FreeSurfer_Label_Names=os.path.join(DataDir, 'map', 'FS_label_name.map.txt')

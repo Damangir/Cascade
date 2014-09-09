@@ -65,9 +65,7 @@ def fsl_check_output(fslcmd, fslargs, output_files = None):
     return check_output(fslcmd, fslargs, output_files)
 
 def fsl_run(fslcmd, fslargs, output_files = None):
-    fslcmd=os.path.join(FSLBIN, FSLPRE+fslcmd)
-    output = check_output(fslcmd, fslargs, output_files)
-    return None != output
+    return None != fsl_check_output(fslcmd, fslargs, output_files)
     
 cascadeCommands = ['linRegister',
                    'resample',
@@ -92,10 +90,12 @@ for cascadecmd in cascadeCommands:
 cascade.logger.info('Cascade location: %s', cascade.config.ExecDir)
 
 
-def cascade_run(cascadecmd, cascadeargs, output_files = None):
+
+def cascade_check_output(cascadecmd, cascadeargs, output_files = None):
     if cascadecmd not in cascadeCommands:
         raise Exception("Unknown Cascade command {}".format(cascadecmd))
     cascadeBinary=os.path.join(cascade.config.ExecDir, cascadecmd)
-    output = check_output(cascadeBinary, cascadeargs, output_files)
-    return None != output
+    return check_output(cascadeBinary, cascadeargs, output_files)
 
+def cascade_run(cascadecmd, cascadeargs, output_files = None):
+    return None != cascade_check_output(cascadecmd, cascadeargs, output_files)

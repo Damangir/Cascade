@@ -60,6 +60,9 @@ parser.add_argument('--levels', default=5,
 parser.add_argument('--radius', default=1,
                     help='Radius of local histogram in millimeter')
 
+parser.add_argument('--threshold', default=0,
+                    help='threshold to create report')
+
 options = parser.parse_args()
 
 
@@ -101,6 +104,7 @@ cascadeManager.calcSpace = calculationSpace
 do_BrainExtract = True
 do_WMEstimate = True
 do_BTS = True
+has_atlas = False
 
 if testMode:
     for i in product(inputImages.keys(), cascadeManager.brainTissueNames.values()):
@@ -220,8 +224,10 @@ if options.freesurfer:
     do_WMEstimate = False
 
     def fsImport():
-        inImages = [os.path.join(options.freesurfer, 'mri', 'rawavg.mgz'),
+        inImages = [
+                    os.path.join(options.freesurfer, 'mri', 'rawavg.mgz'),
                     os.path.join(options.freesurfer, 'mri', 'aseg.mgz'),
+                    os.path.join(options.freesurfer, 'mri', 'wmparc.mgz'),
                    ]
         param = [cascadeManager,
                  'nearest'
@@ -230,6 +236,8 @@ if options.freesurfer:
                     cascadeManager.imageInSpace('aseg.nii.gz', 'T1'),
                     cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', 'T1'),
                     cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', cascadeManager.calcSpace),
+                    cascadeManager.imageInSpace('wmparc.nii.gz', 'T1'),
+                    cascadeManager.imageInSpace('atlas.nii.gz', cascadeManager.calcSpace),
                     ]
        
         params = [
@@ -241,6 +249,7 @@ if options.freesurfer:
     @ruffus.files(fsImport)      
     @ruffus.follows(interaRegistration)
     def ImportFS(input, output, param):
+        #Import aseg as brainTissueSegmentation
         cascade.binary_proxy.run('mri_convert', ['-rt', param[1], '-rl', input[0], input[1], output[0]], output[0])
         cascade.binary_proxy.cascade_run('relabel', [output[0], cascade.config.FreeSurfer_To_BrainTissueSegmentation, output[1]], output[1])
         manager = param[0]
@@ -249,6 +258,14 @@ if options.freesurfer:
         fixedImage = manager.imageInSpace(manager.calcSpace + '.nii.gz', manager.calcSpace)
         transferFile = manager.transITKName(manager.getImageSpace(movingImage), manager.getImageSpace(fixedImage))
         cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile, 'nn'], movedImage)
+        #Import wmparc as atlas
+        cascade.binary_proxy.run('mri_convert', ['-rt', param[1], '-rl', input[0], input[2], output[3]], output[3])
+        movingImage = output[3]
+        movedImage = output[4]
+        fixedImage = manager.imageInSpace(manager.calcSpace + '.nii.gz', manager.calcSpace)
+        transferFile = manager.transITKName(manager.getImageSpace(movingImage), manager.getImageSpace(fixedImage))
+        cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile, 'nn'], movedImage)
+        has_atlas = True
 
     @ruffus.transform(ImportFS, ruffus.formatter(),
                       cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace),
@@ -583,6 +600,36 @@ if testMode:
                     cascadeManager)
     def KolmogorovSmirnov(input, output, manager):
         cascade.binary_proxy.cascade_run('ks', [input[0], input[1], output], output)
+
+if has_atlas and not testMode:
+    options.target_tasks = ['report']
+    def reportParam():
+        if options.simple:
+            finalOutput = cascadeManager.imageInSpace('model.free.wml.nii.gz', cascadeManager.calcSpace)
+        else:
+            finalOutput = cascadeManager.imageInSpace('pvalue.wml.nii.gz', cascadeManager.calcSpace)
+
+        inImages = [finalOutput,
+                    cascadeManager.imageInSpace('atlas.nii.gz', cascadeManager.calcSpace),
+                    options.threshold,
+                    cascade.config.FreeSurfer_Label_Names
+                    ]
+        outImages = [
+                    cascadeManager.reportName('atlas-report.txt')
+                    ]
+        params = [
+                  inImages,
+                  outImages,
+                  ]
+        yield params
+    @ruffus.follows(modelFreeSegmentation)
+    @ruffus.files(reportParam)    
+    def report(input, output):
+        reportTxt = cascade.Copyright() + "\n#" + " ".join(sys.argv) + "\n"
+        reportTxt += cascade.binary_proxy.cascade_check_output('atlas', input)
+        with open(output[0], "w") as text_file:
+            text_file.write(reportTxt)    
+
 
 if __name__ == '__main__':
     ruffus.cmdline.run (options, pipeline_name = 'Cascade pipeline')

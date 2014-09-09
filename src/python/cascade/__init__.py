@@ -42,7 +42,7 @@ class CascadeFileManager(object):
     
     _trans_dir = 'trans'
     _image_dir = 'image'
-    _hist_dir = 'hist'
+    _report_dir = 'report'
     _qc_dir = 'QC'
     
     @classmethod
@@ -97,8 +97,8 @@ class CascadeFileManager(object):
     def imageDir(self):
         return os.path.join(self.root, self._image_dir)
     @property
-    def histDir(self):
-        return os.path.join(self.root, self._hist_dir)
+    def reportDir(self):
+        return os.path.join(self.root, self._report_dir)
     @property
     def qcDir(self):
         return os.path.join(self.root, self._qc_dir)
@@ -136,9 +136,9 @@ class CascadeFileManager(object):
     def transNLName(self, img1, img2):
         return self.getTransFile( self.nonlinear_trans_name(img1, img2))
 
-    def histName(self, imgH):
-        util.ensureDirectory(self.histDir)
-        return os.path.join(self.histDir, imgH)
+    def reportName(self, name):
+        util.ensureDirectory(self.reportDir)
+        return os.path.join(self.reportDir, name)
         
     def getTempFilename(self, filename, extension=''):
         return os.path.join(self.safe_tmp, filename)+extension
