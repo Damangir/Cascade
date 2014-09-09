@@ -611,7 +611,7 @@ if has_atlas and not testMode:
 
         inImages = [finalOutput,
                     cascadeManager.imageInSpace('atlas.nii.gz', cascadeManager.calcSpace),
-                    options.threshold,
+                    float(options.threshold),
                     cascade.config.FreeSurfer_Label_Names
                     ]
         outImages = [
@@ -625,7 +625,13 @@ if has_atlas and not testMode:
     @ruffus.follows(modelFreeSegmentation)
     @ruffus.files(reportParam)    
     def report(input, output):
-        reportTxt = cascade.Copyright() + "\n#" + " ".join(sys.argv) + "\n"
+        reportTxt = "#"*80
+        reportTxt += "\n# ".join(cascade.Copyright().splitlines()) + "\n"
+        reportTxt += "# Working Directory\n"
+        reportTxt += "# " + os.getcwd() + "\n"
+        reportTxt += "# Executed Command\n"
+        reportTxt += "# " + " ".join(sys.argv) + "\n"
+        reportTxt += "#"*80 + "\n"        
         reportTxt += cascade.binary_proxy.cascade_check_output('atlas', input)
         with open(output[0], "w") as text_file:
             text_file.write(reportTxt)    

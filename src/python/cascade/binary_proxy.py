@@ -80,6 +80,7 @@ cascadeCommands = ['linRegister',
                    'ks',
                    'combine',
                    'relabel',
+                   'atlas',
                    ]
 
 for cascadecmd in cascadeCommands:
