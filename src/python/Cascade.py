@@ -260,7 +260,7 @@ if options.freesurfer:
         transferFile = manager.transITKName(manager.getImageSpace(movingImage), manager.getImageSpace(fixedImage))
         cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile, 'nn'], movedImage)
         #Import wmparc as atlas
-        cascade.binary_proxy.run('mri_convert', ['-rt', param[1], '-rl', input[0], input[2], output[3]], output[3])
+        cascade.binary_proxy.run('mri_convert', [input[2], output[3]], output[3])
         movingImage = output[3]
         movedImage = output[4]
         fixedImage = manager.imageInSpace(manager.calcSpace + '.nii.gz', manager.calcSpace)

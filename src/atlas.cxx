@@ -91,7 +91,6 @@ int main(int argc, char *argv[])
     ++segIt;
     ++atlasIt;
   }
-
   std::string delim=";";
   float total = 0;
   std::cout << "Total";
