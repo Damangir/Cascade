@@ -136,9 +136,10 @@ class CascadeFileManager(object):
     def transNLName(self, img1, img2):
         return self.getTransFile( self.nonlinear_trans_name(img1, img2))
 
-    def reportName(self, name):
-        util.ensureDirectory(self.reportDir)
-        return os.path.join(self.reportDir, name)
+    def reportName(self, name, subDir = ''):
+        fname = os.path.join(self.reportDir, subDir, name)
+        util.ensureDirPresence(fname)
+        return fname 
         
     def getTempFilename(self, filename, extension=''):
         return os.path.join(self.safe_tmp, filename)+extension

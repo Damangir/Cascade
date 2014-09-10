@@ -14,56 +14,73 @@ from itertools import product
 
 import cascade
 import ruffus
+import time
+runtimeString = time.strftime("%Y%m%d%H%M%S")
 
 # TODO: Purge unused scripts
-# TODO: Update the chart at each run
 
 print cascade.Copyright()
-parser = ruffus.cmdline.get_argparse(description='Cascade academics')
+parser = ruffus.cmdline.get_argparse(description='Cascade academics: Segmentation of white matter hyperintensities.',
+                                     version = 'Cascade academics v. 1.1',
+                                     ignored_args = ["log_file", "key_legend_in_graph", "draw_graph_horizontally", 
+                                                     "flowchart_format", "checksum_file_name", "recreate_database",
+                                                     "touch_files_only", "use_threads"])
 
-parser.add_argument('-r', '--root', required=True,
+# Output
+outputOptions = parser.add_argument_group('Output options')
+outputOptions.add_argument('-r', '--root', required=True,
                     help='Image root directory')
 
-parser.add_argument('-t', '--t1' , required=True,
+# Input files
+inputOptions = parser.add_argument_group('Input files')
+inputOptions.add_argument('-t', '--t1' , required=True, metavar='T1.nii.gz',
                     help='T1 image')
-parser.add_argument('-f', '--flair',
+inputOptions.add_argument('-f', '--flair', metavar='FLAIR.nii.gz',
                     help='FLAIR image')
-parser.add_argument('-p', '--pd',
+inputOptions.add_argument('-p', '--pd',metavar='PD.nii.gz',
                     help='PD image')
-parser.add_argument('-s', '--t2',
+inputOptions.add_argument('-s', '--t2',metavar='T2.nii.gz',
                     help='T2 image')
 
-parser.add_argument('-b', '--brain-mask',
-                    help='Brain mask')
-parser.add_argument('-m', '--brain-mask-space',
-                    choices=['T1', 'T2', 'FLAIR', 'PD'],
-                    help='Brain mask space')
-parser.add_argument('-c', '--calculation-space',
+generalOptions = parser.add_argument_group('General Options')
+generalOptions.add_argument('--levels', default=5, type=int,
+                    help='Number of levels to evaluate histogram. Default = 5')
+generalOptions.add_argument('--radius', default=1, type=float,
+                    help='Radius of local histogram in millimeter. Default = 1.0mm')
+generalOptions.add_argument('-c', '--calculation-space',
                     choices=['T1', 'T2', 'FLAIR', 'PD'], default='T1',
                     help='Calculation space')
 
-parser.add_argument('--freesurfer', help='Import freesurfer')
+# importing Options
+importOptions = parser.add_argument_group('Import processes')
+importOptions.add_argument('-b', '--brain-mask',metavar='brainMask.nii.gz',
+                    help='Brain mask')
+importOptions.add_argument('-m', '--brain-mask-space',
+                    choices=['T1', 'T2', 'FLAIR', 'PD'],
+                    help='Brain mask space')
 
-parser.add_argument('-d', '--model-dir',
-                    help='Directory where the model located')
+importOptions.add_argument('--freesurfer', help='Import freesurfer')
 
-parser.add_argument('--simple' , action='store_true',
+
+modeOptions = parser.add_argument_group('Pipeline procedure control')
+modeOptions.add_argument('--simple' , action='store_true',
                     help='Mode to run the pipeline')
+modeOptions.add_argument('-d', '--model-dir',
+                    help='Directory where the trained model located.')
 
-parser.add_argument('--spread', default=2,
+simpleOptions = parser.add_argument_group('Simple mode options')
+simpleOptions.add_argument('--spread', default=2, type=float,
                     help='Relative brightness/darkness of WML. It controls how'
                          ' aggressive the pipeline will be. Higher spread, '
-                         'smaller lesion size.')
+                         'smaller lesion size. Default = 2.0')
 
-parser.add_argument('--levels', default=5,
-                    help='Number of levels to evaluate histogram.')
-parser.add_argument('--radius', default=1,
-                    help='Radius of local histogram in millimeter')
-
-parser.add_argument('--threshold', default=0,
-                    help='threshold to create report')
+reportOptions = parser.add_argument_group('Reporting controls')
+reportOptions.add_argument('--threshold', default=0, type=float,
+                    help='threshold to create report. Default = 1.0')
 
 options = parser.parse_args()
+if not any([options.t2,options.flair,options.pd]):
+    parser.error('At least one of FLAIR, T2 or PD should be specified.')
 
 
 if options.simple:
@@ -73,7 +90,7 @@ else:
     trainMode = options.model_dir is None
     testMode = not trainMode
 
-logger, logger_mutex = ruffus.cmdline.setup_logging (__name__, options.log_file, options.verbose)
+#logger, logger_mutex = ruffus.cmdline.setup_logging (__name__, options.log_file, options.verbose)
 
 imageTypes = {1:'T1', 2:'FLAIR', 3:'T2', 4:'PD'}
 
@@ -615,7 +632,7 @@ if has_atlas and not testMode:
                     cascade.config.FreeSurfer_Label_Names
                     ]
         outImages = [
-                    cascadeManager.reportName('atlas-report.txt')
+                    cascadeManager.reportName('atlas-report.csv')
                     ]
         params = [
                   inImages,
@@ -638,4 +655,18 @@ if has_atlas and not testMode:
 
 
 if __name__ == '__main__':
+    if not options.flowchart:
+        ruffus.pipeline_printout_graph (open(cascadeManager.reportName("chart.svg", runtimeString), "w"),
+                                        "svg",
+                                        options.target_tasks,
+                                        options.forced_tasks,
+                                        draw_vertically = True,
+                                        no_key_legend   = True,
+                                        minimal_key_legend = True,
+                                        pipeline_name = 'Cascade pipeline')
+        with open(cascadeManager.reportName("args.log", runtimeString), "w") as text_file:
+            for p in vars(options).iteritems():
+                text_file.write("{} {}\n".format(*p))    
+
+    exit(0)
     ruffus.cmdline.run (options, pipeline_name = 'Cascade pipeline')
