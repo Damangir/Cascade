@@ -521,7 +521,7 @@ if options.evident:
                   cascadeManager.imageInSpace('possible.wml.nii.gz', cascadeManager.calcSpace)
                       )
     def possibleArea(input, output):
-        btsOutput = input[-1][0]
+        btsOutput = input[-1]
         input = input[:-1]
         cascade.binary_proxy.fsl_run('fslmaths', [input[0], '-thr' , options.levels/2.0 ,'-bin', output])
         for i in input[1:]:
