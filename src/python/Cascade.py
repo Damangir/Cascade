@@ -10,16 +10,21 @@ if sys.version_info<(2,7,0):
 
 import os
 import shutil
+import argparse
 from itertools import product
 
 import cascade
+import cascade.terminalsize
 import ruffus
 import time
 runtimeString = time.strftime("%Y%m%d%H%M%S")
 
 # TODO: Purge unused scripts
 
-print cascade.Copyright()
+# Fix the envirnment variable for width. It is not corectly set on all platforms
+os.environ['COLUMNS'] = str(cascade.terminalsize.get_terminal_size()[0])
+defaultStr = ' (default: %(default)s)'
+
 parser = ruffus.cmdline.get_argparse(description='Cascade academics: Segmentation of white matter hyperintensities.',
                                      version = 'Cascade academics v. 1.1',
                                      ignored_args = ["log_file", "key_legend_in_graph", "draw_graph_horizontally", 
@@ -34,7 +39,8 @@ outputOptions.add_argument('-r', '--root', required=True,
 # Input files
 inputOptions = parser.add_argument_group('Input files')
 inputOptions.add_argument('-t', '--t1' , required=True, metavar='T1.nii.gz',
-                    help='T1 image')
+                    help='T1 image. (required)')
+
 inputOptions.add_argument('-f', '--flair', metavar='FLAIR.nii.gz',
                     help='FLAIR image')
 inputOptions.add_argument('-p', '--pd',metavar='PD.nii.gz',
@@ -44,43 +50,62 @@ inputOptions.add_argument('-s', '--t2',metavar='T2.nii.gz',
 
 generalOptions = parser.add_argument_group('General Options')
 generalOptions.add_argument('--levels', default=5, type=int,
-                    help='Number of levels to evaluate histogram. Default = 5')
+                    help='Number of levels to evaluate histogram.'+defaultStr)
 generalOptions.add_argument('--radius', default=1, type=float,
-                    help='Radius of local histogram in millimeter. Default = 1.0mm')
+                    help='Radius of local histogram in millimeter.'+defaultStr)
 generalOptions.add_argument('-c', '--calculation-space',
                     choices=['T1', 'T2', 'FLAIR', 'PD'], default='T1',
-                    help='Calculation space')
+                    help='Calculation space'+defaultStr)
+generalOptions.add_argument('--evident' , action='store_true',
+                    help='Trim evident normal tissues first.')
 
 # importing Options
-importOptions = parser.add_argument_group('Import processes')
-importOptions.add_argument('-b', '--brain-mask',metavar='brainMask.nii.gz',
-                    help='Brain mask')
-importOptions.add_argument('-m', '--brain-mask-space',
-                    choices=['T1', 'T2', 'FLAIR', 'PD'],
-                    help='Brain mask space')
+importOptions = parser.add_argument_group('Import processes', 
+                                          'Import from maximum one source is allowed.')
+importOptions.add_argument('--brain-mask',metavar=('brainMask.nii.gz', '{T1,T2,FLAIR,PD}'),
+                           help='Brain mask and the space it is located. '
+                           'All area with value greater than zero will be considered as brain.',
+                           nargs=2)
 
-importOptions.add_argument('--freesurfer', help='Import freesurfer')
+importOptions.add_argument('--freesurfer', metavar='FS_SUBJECT',
+                           help='Import freesurfer from the directory. You should '
+                           'point to the subject directory i.e. $SUBJECTS_DIR/SubjectID.'
+                           'mri directory is expected to be present in this directory.')
 
 
-modeOptions = parser.add_argument_group('Pipeline procedure control')
+modeOptions = parser.add_argument_group('Pipeline procedure control',
+                                        'Only one of these options are allowed. '
+                                        'For training do not use any.')
+
 modeOptions.add_argument('--simple' , action='store_true',
-                    help='Mode to run the pipeline')
+                    help='Run the pipeline in simple mode i.e. without trained model.')
+
 modeOptions.add_argument('-d', '--model-dir',
-                    help='Directory where the trained model located.')
+                    help='Directory where the trained model located. This option'
+                    'implies runing in train/test model and presume you have a '
+                    'trained model stored in a directory.')
+
 
 simpleOptions = parser.add_argument_group('Simple mode options')
 simpleOptions.add_argument('--spread', default=2, type=float,
                     help='Relative brightness/darkness of WML. It controls how'
                          ' aggressive the pipeline will be. Higher spread, '
-                         'smaller lesion size. Default = 2.0')
+                         'smaller lesion size.'+defaultStr)
 
 reportOptions = parser.add_argument_group('Reporting controls')
 reportOptions.add_argument('--threshold', default=0, type=float,
-                    help='threshold to create report. Default = 1.0')
+                    help='Threshold used in the report.'+defaultStr)
 
 options = parser.parse_args()
+
 if not any([options.t2,options.flair,options.pd]):
     parser.error('At least one of FLAIR, T2 or PD should be specified.')
+
+if len(filter(None, [options.freesurfer,options.brain_mask])) > 1:
+    parser.error('You can import only from one source.')
+
+if len(filter(None, [options.simple,options.model_dir])) > 1:
+    parser.error('You should either use simple mode or test/train mode.')
 
 
 if options.simple:
@@ -129,6 +154,8 @@ if testMode:
         print modelName
         if not os.path.exists(modelName):
             raise Exception('No model found at {}'.format(modelName))
+
+print cascade.Copyright()
 
 ###############################################################################
 # Bring each sequence into the pipeline
@@ -303,13 +330,15 @@ if options.freesurfer:
         cascade.binary_proxy.fsl_run('fslmaths', [input[2], '-thr', 3, output])
 
 
-
+###############################################################################
+# Import the brain mask
+###############################################################################
 if do_BrainExtract and options.brain_mask:
     do_BrainExtract = False
     ###############################################################################
     # Bring the brain mask into the pipeline
     ###############################################################################
-    @ruffus.transform(options.brain_mask, ruffus.regex('.*'), cascadeManager.imageInSpace('brain_mask.nii.gz', options.brain_mask_space))
+    @ruffus.transform(options.brain_mask[0], ruffus.regex('.*'), cascadeManager.imageInSpace('brain_mask.nii.gz', options.brain_mask[1]))
     def brainMask(input, output):
         cascade.binary_proxy.fsl_run('fslchfiletype', ['NIFTI_GZ', input, output])
         cascade.binary_proxy.fsl_run('fslreorient2std', [output, output])
@@ -358,6 +387,7 @@ if do_BrainExtract:
     def brainExtraction(input, output, param):
         cascade.binary_proxy.cascade_run('brainExtraction', input + output + param, output)
 
+
 if do_WMEstimate:
 # TODO: Estimate WM mask for N4 normalization
     @ruffus.transform(brainExtraction, ruffus.formatter(),
@@ -378,6 +408,7 @@ if do_WMEstimate:
                               cascadeManager)
 def normalize(input, output, manager):
     cascade.binary_proxy.cascade_run('inhomogeneity', [input[0][0], input[1], output], output)
+
 
 if do_BTS:
     ###############################################################################
@@ -467,6 +498,45 @@ if do_BTS:
     def brainTissueSegmentation(input, output, param):
         cascade.binary_proxy.cascade_run('refineBTS', input + output + param, output)
 
+
+if options.evident:
+    @ruffus.follows(brainTissueSegmentation)
+    @ruffus.transform(normalize, ruffus.regex(r'.*/(.*)/(.*).norm.nii.gz$'),
+                      ruffus.add_inputs([cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', cascadeManager.calcSpace),
+                                         options.radius, # variance (for smoothing in pyramid creation)
+                                         cascade.config.Spread,
+                                         options.levels, # number of levels to evaluate
+                                         ]),
+                      cascadeManager.imageInSpace(r'\2.evident.nii.gz', r'\1'),
+                      cascadeManager)
+    def trimEvident(input, output, manager):
+        cascade.binary_proxy.cascade_run('modelFree', [input[0],
+                                                       input[1][0],
+                                                       output,
+                                                       input[1][1],
+                                                       input[1][2][manager.getImageType(input[0])],
+                                                       input[1][3]], output)
+    
+    @ruffus.merge([trimEvident, brainTissueSegmentation],
+                  cascadeManager.imageInSpace('possible.wml.nii.gz', cascadeManager.calcSpace)
+                      )
+    def possibleArea(input, output):
+        btsOutput = input[-1][0]
+        input = input[:-1]
+        cascade.binary_proxy.fsl_run('fslmaths', [input[0], '-thr' , options.levels/2.0 ,'-bin', output])
+        for i in input[1:]:
+            cascade.binary_proxy.fsl_run('fslmaths', [i, '-thr' , options.levels/2.0 , '-add', output ,'-bin', output])
+    
+        cascade.binary_proxy.fsl_run('fslmaths', [output, '-mul' , -1, '-add', 1, output])
+        cascade.binary_proxy.fsl_run('fslmaths', [btsOutput, '-add', 1,'-thr', 4, '-bin', '-mul', output, output])
+else:
+    @ruffus.merge([brainTissueSegmentation],
+                  cascadeManager.imageInSpace('possible.wml.nii.gz', cascadeManager.calcSpace)
+                      )
+    def possibleArea(input, output):
+        btsOutput = input[-1][0]
+        cascade.binary_proxy.fsl_run('fslmaths', [btsOutput, '-add', 1,'-thr', 4, '-bin', output])
+        
 ###############################################################################
 # mark evidently normal brain
 ###############################################################################
@@ -474,12 +544,12 @@ def modelFreeParam():
     imgForModelFree = filter(lambda x:x in inputImages, ['FLAIR', 'T2', 'PD'])[0]
     inImages = [cascadeManager.imageInSpace(imgForModelFree + '.norm.nii.gz', cascadeManager.calcSpace),
                 cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', cascadeManager.calcSpace),
+                options.radius, # variance (for smoothing in pyramid creation)
+                options.spread, # alpha (spread, its sign controls whether MWL is dark or bright.)
+                options.levels, # number of levels to evaluate
+                cascadeManager.imageInSpace('possible.wml.nii.gz', cascadeManager.calcSpace)
                 ]
-    btsParams = [
-                 options.radius, # variance (for smoothing in pyramid creation)
-                 options.spread, # alpha (spread, its sign controls whether MWL is dark or bright.)
-                 options.levels, # number of levels to evaluate
-                 ]
+    
     outImages = [
                 cascadeManager.imageInSpace('model.free.wml.nii.gz', cascadeManager.calcSpace),
                 ]
@@ -487,15 +557,20 @@ def modelFreeParam():
     params = [
               inImages,
               outImages,
-              btsParams
               ]
     yield params
 
+@ruffus.follows(possibleArea)
 @ruffus.follows(brainTissueSegmentation)
 @ruffus.follows(normalize)
 @ruffus.files(modelFreeParam)
-def modelFreeSegmentation(input, output, param):
-    cascade.binary_proxy.cascade_run('modelFree', input + output + param, output)
+def modelFreeSegmentation(input, output):
+    possible = input[-1]
+    input = input[:-1]
+    cascade.binary_proxy.cascade_run('modelFree', input[:2] + output + input[2:], output)
+    cascade.binary_proxy.fsl_run('fslmaths', [possible, '-bin','-mul', output[0], output[0]])
+
+
 
 ###############################################################################
 # This is model free segmentation. Fine results for volume estimation.
@@ -655,7 +730,7 @@ if has_atlas and not testMode:
 
 
 if __name__ == '__main__':
-    if not options.flowchart:
+    if not any([options.flowchart, options.just_print]):
         ruffus.pipeline_printout_graph (open(cascadeManager.reportName("chart.svg", runtimeString), "w"),
                                         "svg",
                                         options.target_tasks,
@@ -668,5 +743,4 @@ if __name__ == '__main__':
             for p in vars(options).iteritems():
                 text_file.write("{} {}\n".format(*p))    
 
-    exit(0)
     ruffus.cmdline.run (options, pipeline_name = 'Cascade pipeline')
