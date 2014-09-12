@@ -530,11 +530,11 @@ if options.evident:
         cascade.binary_proxy.fsl_run('fslmaths', [output, '-mul' , -1, '-add', 1, output])
         cascade.binary_proxy.fsl_run('fslmaths', [btsOutput, '-add', 1,'-thr', 4, '-bin', '-mul', output, output])
 else:
-    @ruffus.merge([brainTissueSegmentation],
+    @ruffus.merge(brainTissueSegmentation,
                   cascadeManager.imageInSpace('possible.wml.nii.gz', cascadeManager.calcSpace)
                       )
     def possibleArea(input, output):
-        btsOutput = input[-1][0]
+        btsOutput = input[0]
         cascade.binary_proxy.fsl_run('fslmaths', [btsOutput, '-add', 1,'-thr', 4, '-bin', output])
         
 ###############################################################################
