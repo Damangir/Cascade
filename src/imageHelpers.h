@@ -16,6 +16,7 @@
 #include "itkImageMaskSpatialObject.h"
 #include "itkExtractImageFilter.h"
 #include "itkMinimumMaximumImageCalculator.h"
+#include "itkImageToHistogramFilter.h"
 
 #include "itkBinaryBallStructuringElement.h"
 #include "itkBinaryErodeImageFilter.h"
@@ -101,6 +102,26 @@ typename FilterT::OutputImageType::Pointer GraftOutput(
 BinaryFilterAsFunction(Add);
 BinaryFilterAsFunction(Subtract);
 BinaryFilterAsFunction(Multiply);
+
+template< class ImageT >
+void ImageExtent(ImageT* image, typename ImageT::PixelType& minValue,
+                 typename ImageT::PixelType& maxValue, double quantile = 0.01)
+{
+  typedef itk::Statistics::ImageToHistogramFilter< ImageT > HistogramFilterType;
+  typename HistogramFilterType::Pointer histogramFilter =
+      HistogramFilterType::New();
+  typename HistogramFilterType::HistogramSizeType size(1);
+  size[0] = 255;        // number of bins for the Red   channel
+  histogramFilter->SetHistogramSize(size);
+  histogramFilter->SetMarginalScale(10.0);
+  histogramFilter->SetInput(image);
+  histogramFilter->Update();
+  typename HistogramFilterType::HistogramPointer hist =
+      histogramFilter->GetOutput();
+  hist->SetFrequency(0, 0);
+  minValue = hist->Quantile(0, quantile);
+  maxValue = hist->Quantile(0, 1 - quantile);
+}
 
 template< class ImageT >
 itk::Size< ImageT::ImageDimension > GetPhysicalRadius(const ImageT* img,

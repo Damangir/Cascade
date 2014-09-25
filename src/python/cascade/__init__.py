@@ -1,3 +1,8 @@
+__author__  = "Soheil Damangir"
+__status__  = "production"
+__version__ = "1.0"
+__date__    = "24 September 2014"
+
 def Copyright():
     return """
 The Cascade pipeline. http://ki.se/en/nvs/cascade
@@ -19,7 +24,7 @@ import os
 import shutil
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig()
 class DummyMutex():    
     def __enter__(self):
       pass
@@ -28,6 +33,19 @@ class DummyMutex():
 
 logger = logging.getLogger(__name__)  
 logger_mutex = DummyMutex()
+verbose = os.environ.get('CASCADE_VERBOSE')
+if verbose == '0':
+    logger.setLevel(logging.CRITICAL)
+elif verbose == '1':
+    logger.setLevel(logging.ERROR)
+elif verbose == '2':
+    logger.setLevel(logging.WARNING)
+elif verbose == '3':
+    logger.setLevel(logging.INFO)
+elif verbose == '4':
+    logger.setLevel(logging.DEBUG)
+else:
+    logger.setLevel(logging.CRITICAL)
 
 from cascade import config
 from cascade import util
@@ -68,7 +86,8 @@ class CascadeFileManager(object):
 
         if not os.path.isdir(self.root): os.mkdir(self.root)
                 
-        logger.debug('root: %s', self.root)
+        with logger_mutex:
+            logger.debug('root: %s', self.root)
               
         import tempfile
         self.safe_tmp= tempfile.mkdtemp()
@@ -76,10 +95,12 @@ class CascadeFileManager(object):
     
     def __del__(self):
         try:
-            logger.debug('Removing: %s', self.safe_tmp)
+            with logger_mutex:
+                logger.debug('Removing: %s', self.safe_tmp)
             shutil.rmtree(self.safe_tmp)
         except:
-            logger.error('Unable to remove: %s', self.safe_tmp)
+            with logger_mutex:
+                logger.error('Unable to remove: %s', self.safe_tmp)
 
     @property
     def calcSpace(self):

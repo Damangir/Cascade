@@ -16,7 +16,9 @@ int main(int argc, char *argv[])
   {
     std::cerr << "Missing Parameters " << std::endl;
     std::cerr << "Usage: " << argv[0];
-    std::cerr << " image brainTissues newBrainTissue [alpha] [beta]";
+    std::cerr << " image brainTissues newBrainTissue [alpha] [beta]"<< std::endl;
+    std::cerr << "alpha: Percentile of GM to be doublechecked"<< std::endl;
+    std::cerr << "beta:  Percentage of WM to GM voxels in surrounding in order for a voxel to be change to WM"<< std::endl;
     std::cerr << std::endl;
     return EXIT_FAILURE;
   }
@@ -25,7 +27,7 @@ int main(int argc, char *argv[])
   std::string brainTissue(argv[2]);
   std::string output(argv[3]);
   float alpha = 1;
-  float beta = 0.4;
+  float beta = 0.5;
   if (argc > 4) alpha = atof(argv[4]);
   if (argc > 5) beta = atof(argv[5]);
 
@@ -44,6 +46,18 @@ int main(int argc, char *argv[])
   ClassifidImageType::Pointer brainTissueImg =
       CU::LoadImage< ClassifidImageType >(brainTissue);
 
+  ClassifidImageType::SizeType neighborRadius;
+  double rad = 0.5;
+  while (true)
+  {
+    neighborRadius = CU::GetPhysicalRadius< ClassifidImageType >(brainTissueImg,
+                                                                 rad);
+    if (CU::GetNumberOfPixels(neighborRadius) > 3)
+    {
+      break;
+    }
+    rad *= 1.1;
+  }
   ImageType::Pointer subjectImg = CU::LoadImage< ImageType >(subjectImage);
 
   ClassifidImageType::Pointer CSFMask;
@@ -182,14 +196,17 @@ int main(int argc, char *argv[])
     typedef itk::VotingRelabelImageFilter< ClassifidImageType,
         ClassifidImageType > RelabelerFilter;
     RelabelerFilter::Pointer relabler = RelabelerFilter::New();
-    relabler->SetRadius(
-        CU::GetPhysicalRadius< ClassifidImageType >(LesionMask, 0.5));
+    relabler->SetRadius(neighborRadius);
+
+    std::cerr << relabler->GetRadius() << std::endl;
 
     relabler->SetBackgroundValue(4); // Background are doubtful
     relabler->SetForegroundValue(3); // WM vote for doubtful
 
-    relabler->SetBirthThreshold(beta * 100); // Percentage of WM to the rest voxels in order for a voxel to be considered WM
-    relabler->SetSurvivalThreshold((1 - beta) * 100); // Percentage of GM to the rest voxels in order for a voxel to be considered GM
+    // Percentage of WM to WM+GM voxels in surrounding in order for a voxel to be change to WM
+    relabler->SetBirthThreshold(beta * 100);
+    // Percentage of GM to WM+GM voxels in surrounding in order for a voxel to be change to GM
+    relabler->SetSurvivalThreshold(beta * 100);
 
     relabler->SetBirthValue(3); // We convert to WM
     relabler->SetUnsurvivedValue(2); // unsurvived set to GM
@@ -251,8 +268,7 @@ int main(int argc, char *argv[])
      */
     typedef itk::VotingBinaryImageFilter< ClassifidImageType, ClassifidImageType > VotingFilterType;
     VotingFilterType::Pointer filter = VotingFilterType::New();
-    filter->SetRadius(
-        CU::GetPhysicalRadius< ClassifidImageType >(brainTissueImg, 0.5));
+    filter->SetRadius(neighborRadius);
     filter->SetInput(brainTissueImg);
     filter->SetForegroundValue(3);
     filter->SetBackgroundValue(2);

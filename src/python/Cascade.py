@@ -1,33 +1,27 @@
 #!/usr/bin/env python
 
-levels = 5
 import sys
-if sys.version_info<(2,7,0):
-    sys.stderr.write("You need python 2.7 or later to run the Cascade.\n")
-    sys.stderr.write("You are using python"+sys.version+".\n")
-    exit(1)
-
-
 import os
 import shutil
 import argparse
 from itertools import product
-
-import cascade
-import cascade.terminalsize
 import ruffus
 import time
+
+import util.checkpython
+import util.terminalsize
+
 runtimeString = time.strftime("%Y%m%d%H%M%S")
 
 # TODO: Purge unused scripts
 
 # Fix the envirnment variable for width. It is not corectly set on all platforms
-os.environ['COLUMNS'] = str(cascade.terminalsize.get_terminal_size()[0])
+os.environ['COLUMNS'] = str(util.terminalsize.get_terminal_size()[0])
 defaultStr = ' (default: %(default)s)'
 
 parser = ruffus.cmdline.get_argparse(description='Cascade academics: Segmentation of white matter hyperintensities.',
                                      version = 'Cascade academics v. 1.1',
-                                     ignored_args = ["log_file", "key_legend_in_graph", "draw_graph_horizontally", 
+                                     ignored_args = ["key_legend_in_graph", "draw_graph_horizontally", 
                                                      "flowchart_format", "checksum_file_name", "recreate_database",
                                                      "touch_files_only", "use_threads"])
 
@@ -97,6 +91,10 @@ reportOptions.add_argument('--threshold', default=0, type=float,
                     help='Threshold used in the report.'+defaultStr)
 
 options = parser.parse_args()
+logger, logger_mutex = ruffus.cmdline.setup_logging (__name__, options.log_file, options.verbose)
+os.environ['CASCADE_VERBOSE'] =  str(options.verbose)
+import cascade
+cascade.logger, cascade.logger_mutex = ruffus.cmdline.setup_logging ('cascade', options.log_file, options.verbose)
 
 if not any([options.t2,options.flair,options.pd]):
     parser.error('At least one of FLAIR, T2 or PD should be specified.')
@@ -389,12 +387,34 @@ if do_BrainExtract:
 
 
 if do_WMEstimate:
-# TODO: Estimate WM mask for N4 normalization
-    @ruffus.transform(brainExtraction, ruffus.formatter(),
-                      cascadeManager.imageInSpace('norm.mask.nii.gz', cascadeManager.calcSpace),
-                      cascadeManager)
-    def normalizationMask(input, output, param):
-        cascade.binary_proxy.fsl_run('fslmaths', [input, '-bin', output])
+    def nmParam():
+        imgForNM = filter(lambda x:x in inputImages, ['T1', 'T2', 'PD', 'FLAIR'])[0]
+        inImages = [cascadeManager.imageInSpace(imgForNM + '.nii.gz', cascadeManager.calcSpace),
+                    cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace),
+                    cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace), #CSF
+                    cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace), #GM
+                    cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace), #WM
+                   ]
+        outImages = [
+                    cascadeManager.imageInSpace('norm.mask.nii.gz', cascadeManager.calcSpace),
+                    ]
+       
+        params = [
+                  inImages,
+                  outImages,
+                  cascadeManager
+                  ]
+        yield params
+    @ruffus.follows(interaRegistration)        
+    @ruffus.follows(brainExtraction)
+    @ruffus.files(nmParam)      
+    def normalizationMask(input, output, manager):
+        cascade.binary_proxy.cascade_run('tts', [input[0], input[1], output[0], input[2], input[3], input[4]], output)
+        map_file = manager.getTempFilename('tts2norm_mask')
+        with open(map_file, 'w') as f:
+            f.write("0    0\n1    0\n2    0\n3    1");
+        
+        cascade.binary_proxy.cascade_run('relabel', [output[0], map_file, output[0]], output[0])
     
 
 ###############################################################################
@@ -407,96 +427,35 @@ if do_WMEstimate:
                               cascadeManager.imageInSpace('{basename[0][0]}.norm{ext[0][0]}', cascadeManager.calcSpace),
                               cascadeManager)
 def normalize(input, output, manager):
-    cascade.binary_proxy.cascade_run('inhomogeneity', [input[0][0], input[1], output], output)
+    cascade.binary_proxy.cascade_run('inhomogeneity', [input[0][0], input[1][0], output], output)
 
 
 if do_BTS:
     ###############################################################################
-    # CSF segmentation
-    ###############################################################################
-    def csfParam():
-        imgForCSFSeg = filter(lambda x:x in inputImages, ['FLAIR', 'T1', 'T2', 'PD'])[0]
-        inImages = [cascadeManager.imageInSpace(imgForCSFSeg + '.norm.nii.gz', cascadeManager.calcSpace),
-                    cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace),
-                    cascadeManager.imageInSpace(os.path.basename(cascade.config.StandardCSF), cascadeManager.calcSpace),
-                  ]
-        btsParams = [
-                     0.5,  # Bias
-                     3,  # nIteration
-                     ]
-        outImages = [
-                    cascadeManager.imageInSpace('csf_mask.nii.gz', cascadeManager.calcSpace),
-                    ]
-        params = [
-                  inImages,
-                  outImages,
-                  btsParams
-                  ]
-        yield params
-   
-    @ruffus.follows(resampleStdToNative)        
-    @ruffus.follows(normalize)        
-    @ruffus.files(csfParam)
-    def csfSegmentation(input, output, param):
-        cascade.binary_proxy.cascade_run('extractCSF', input + output + param, output)
-   
-    ###############################################################################
-    # Initial brain tissue segmentation
-    ###############################################################################
-    def wgSepParam():
-        # We can not perform this step on FLAIR as the algorithm suspect WM similar to
-        # CSF as WML, which is not the case in FLAIR
-        imgForBTSSeg = filter(lambda x:x in inputImages, ['T1', 'T2', 'PD'])[0]
-        inImages = [cascadeManager.imageInSpace(imgForBTSSeg + '.norm.nii.gz', cascadeManager.calcSpace),
-                    cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace),
-                    cascadeManager.imageInSpace('csf_mask.nii.gz', cascadeManager.calcSpace),
-                    cascadeManager.imageInSpace(os.path.basename(cascade.config.StandardGM), cascadeManager.calcSpace),
-                    cascadeManager.imageInSpace(os.path.basename(cascade.config.StandardWM), cascadeManager.calcSpace), ]
-        btsParams = [
-                     0.3,  # bias
-                     2,  # nIteration
-                    ]
-        outImages = [
-                    cascadeManager.imageInSpace('WG.separation.nii.gz', cascadeManager.calcSpace),
-                    ]
-        params = [
-                  inImages,
-                  outImages,
-                  btsParams
-                  ]
-        yield params
-   
-    @ruffus.follows(csfSegmentation)        
-    @ruffus.files(wgSepParam)
-    def WhiteGrayMatterSeparation(input, output, param):
-        cascade.binary_proxy.cascade_run('separateWG', input + output + param, output)
-
-    ###############################################################################
     # BTS segmentation
     ###############################################################################
     def btsParam():
-        imgForBTSSeg = filter(lambda x:x in inputImages, ['FLAIR', 'T2', 'PD'])[0]
-        inImages = [cascadeManager.imageInSpace(imgForBTSSeg + '.norm.nii.gz', cascadeManager.calcSpace),
-                    cascadeManager.imageInSpace('WG.separation.nii.gz', cascadeManager.calcSpace),
-                   ]
-        btsParams = [
-                     0.5,  # Alpha (spread)
-                     0.2,  # Beta (birth threshold)
-                     ]
-        outImages = [
-                    cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', cascadeManager.calcSpace),
-                    ]
-        params = [
-                  inImages,
-                  outImages,
-                  btsParams
-                  ]
-        yield params
-   
-    @ruffus.follows(WhiteGrayMatterSeparation)        
+        input = [cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace)]
+
+        param = {
+                 'out' : cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', cascadeManager.calcSpace),
+                 'intermediate' : cascadeManager.imageInSpace('', cascadeManager.calcSpace),
+                 'brain': cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace),
+                 }
+        for s in inputImages:
+            param[s.lower()] = cascadeManager.imageInSpace( s + '.norm.nii.gz', cascadeManager.calcSpace)
+            input.append(cascadeManager.imageInSpace( s + '.norm.nii.gz', cascadeManager.calcSpace))
+
+        yield [input, param['out'], param]
+           
+    @ruffus.follows(brainExtraction)        
+    @ruffus.follows(normalize)        
     @ruffus.files(btsParam)
     def brainTissueSegmentation(input, output, param):
-        cascade.binary_proxy.cascade_run('refineBTS', input + output + param, output)
+        args = [os.path.join(os.path.dirname(__file__), 'CascadeTTS.py')]
+        for arg, value in param.iteritems():
+            if value: args.extend(['--' + arg, str(value)])
+        cascade.binary_proxy.run(sys.executable, args)
 
 
 if options.evident:

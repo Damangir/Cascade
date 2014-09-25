@@ -8,8 +8,11 @@ FIND_PACKAGE(ITK 4.3 REQUIRED)
 IF(ITK_FOUND)
 	INCLUDE(${ITK_USE_FILE})
 ELSE(ITK_FOUND)
-	MESSAGE(FATAL_ERROR"ITK 4.4+ not found. Please set ITK_DIR.")
+	MESSAGE(FATAL_ERROR"ITK 4.3+ not found. Please set ITK_DIR.")
 ENDIF(ITK_FOUND)
+
+add_executable(tts TTS.cxx)
+target_link_libraries(tts ${ITK_LIBRARIES})
 
 add_executable(atlas atlas.cxx)
 target_link_libraries(atlas ${ITK_LIBRARIES})

@@ -14,7 +14,7 @@ template< typename TInput, typename TOutput, typename TMembershipFunction >
 class MembershipFunctor
 {
 public:
-  typedef typename TMembershipFunction::Pointer MembershipFunctionPointer;
+  typedef typename TMembershipFunction::ConstPointer MembershipFunctionPointer;
   typedef typename TMembershipFunction::MeasurementVectorType MeasurementVectorType;
 
   typedef VectorContainer< unsigned int, MembershipFunctionPointer > MembershipFunctionContainerType;
@@ -55,7 +55,7 @@ public:
     return membershipPixel;
   }
 
-  void AddMembershipFunction(TMembershipFunction * _arg)
+  void AddMembershipFunction(const TMembershipFunction * _arg)
   {
     m_MembershipFunctions->InsertElement(m_NumberOfClasses, _arg);
     m_NumberOfClasses = m_MembershipFunctions->Size();
@@ -107,7 +107,7 @@ public:
   typedef typename TInputImage::PixelType InputPixelType;
   typedef typename TOutputImage::PixelType OutputPixelType;
 
-  void AddMembershipFunction(TMembershipFunction * _arg)
+  void AddMembershipFunction(const TMembershipFunction * _arg)
   {
     itkDebugMacro("adding " << _arg <<  " as membership function");
     this->GetFunctor().AddMembershipFunction(_arg);

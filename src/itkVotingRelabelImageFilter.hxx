@@ -100,12 +100,12 @@ void VotingRelabelImageFilter< TInputImage, TOutputImage >::ThreadedGenerateData
           }
         }
 
-        if (countF*100 >= this->GetBirthThreshold()*(countO+countB))
+        if (countF*100 >= this->GetBirthThreshold()*(countO+countF))
         {
           it.Set(static_cast< OutputPixelType >(m_BirthValue));
           numberOfPixelsChanged++;
         }
-        if (countO*100 >= this->GetSurvivalThreshold()*(countF+countB))
+        if (countO*100 > this->GetSurvivalThreshold()*(countO+countF))
         {
           it.Set(static_cast< OutputPixelType >(m_UnsurvivedValue));
           numberOfPixelsChanged++;
