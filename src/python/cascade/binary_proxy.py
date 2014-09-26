@@ -43,7 +43,7 @@ def check_output(cmd, args, output_files=None, silent=False, just_print=False):
         cascade.util.ensureAbsence(output_files)
     except OSError as e:
         with cascade.logger_mutex:
-            cascade.logger.error('%s: [OSError %d] %s', command_txt, e.errno, e.stderror)
+            cascade.logger.error('%s: [OSError %d] %s', command_txt, e.errno, e.strerror)
     return None
 
 def run(cmd, args, output_files=None, silent=False, just_print=False):
