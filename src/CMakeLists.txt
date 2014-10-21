@@ -11,6 +11,12 @@ ELSE(ITK_FOUND)
 	MESSAGE(FATAL_ERROR"ITK 4.3+ not found. Please set ITK_DIR.")
 ENDIF(ITK_FOUND)
 
+add_executable(Shark shark.cxx)
+target_link_libraries(Shark ${ITK_LIBRARIES})
+
+add_executable(knn KNN.cxx)
+target_link_libraries(knn ${ITK_LIBRARIES})
+
 add_executable(tts TTS.cxx)
 target_link_libraries(tts ${ITK_LIBRARIES})
 

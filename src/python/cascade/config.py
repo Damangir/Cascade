@@ -31,6 +31,8 @@ if not os.path.exists(StandardImg):
 
 FreeSurfer_To_BrainTissueSegmentation=os.path.join(DataDir, 'map', 'FS_label.map.txt')
 FreeSurfer_Label_Names=os.path.join(DataDir, 'map', 'FS_label_name.map.txt')
+Unity_Transform=os.path.join(DataDir, 'transform', 'unity.tfm')
+
 
 epsilon = 0.00001
 

@@ -50,6 +50,8 @@ generalOptions.add_argument('--radius', default=1, type=float,
 generalOptions.add_argument('-c', '--calculation-space',
                     choices=['T1', 'T2', 'FLAIR', 'PD'], default='T1',
                     help='Calculation space'+defaultStr)
+generalOptions.add_argument('--already-registered' , action='store_true',
+                    help='Skip registration assume all sequences are preregistered.')
 generalOptions.add_argument('--evident' , action='store_true',
                     help='Trim evident normal tissues first.')
 
@@ -195,7 +197,12 @@ def interaRegistration(input, output, manager):
     movedImage = output[0]
     transferFile = output[1]
     invTransferFile = output[2]
-    cascade.binary_proxy.cascade_run('linRegister', [fixedImage, movingImage, transferFile, invTransferFile])
+    if options.already_registered:
+        shutil.copy(cascade.config.Unity_Transform, transferFile)
+        shutil.copy(cascade.config.Unity_Transform, invTransferFile)
+    else:
+        cascade.binary_proxy.cascade_run('linRegister', [fixedImage, movingImage, transferFile, invTransferFile])
+        
     if movedImage != movingImage:
         cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile])
 
