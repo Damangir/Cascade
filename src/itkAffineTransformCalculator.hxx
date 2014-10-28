@@ -8,9 +8,8 @@
 namespace itk
 {
 
-template <class TFixedImageType, class TMovingImageType>
-AffineTransformCalculator<TFixedImageType, TMovingImageType>
-::AffineTransformCalculator()
+template< class TFixedImageType, class TMovingImageType >
+AffineTransformCalculator< TFixedImageType, TMovingImageType >::AffineTransformCalculator()
 {
   // constructor
   m_FixedImage = 0;
@@ -22,30 +21,28 @@ AffineTransformCalculator<TFixedImageType, TMovingImageType>
   m_RigidTransform->SetIdentity();
   m_AffineTransform->SetIdentity();
 
+  m_IntraRegistration = false;
   this->SetNumberOfRequiredOutputs(1);
-  this->ProcessObject::SetNthOutput( 0, TransformObjectType::New().GetPointer() );
+  this->ProcessObject::SetNthOutput(0, TransformObjectType::New().GetPointer());
 }
 
-template <class TFixedImageType, class TMovingImageType>
-const typename AffineTransformCalculator<TFixedImageType, TMovingImageType>::TransformObjectType*
-AffineTransformCalculator<TFixedImageType, TMovingImageType>
-::GetTransformationOutput() const
+template< class TFixedImageType, class TMovingImageType >
+const typename AffineTransformCalculator< TFixedImageType, TMovingImageType >::TransformObjectType*
+AffineTransformCalculator< TFixedImageType, TMovingImageType >::GetTransformationOutput() const
 {
-  return static_cast< const TransformObjectType * >( this->ProcessObject::GetOutput(0) );
+  return static_cast< const TransformObjectType * >(this->ProcessObject::GetOutput(
+      0));
 }
 
-template <class TFixedImageType, class TMovingImageType>
-typename AffineTransformCalculator<TFixedImageType, TMovingImageType>::TransformObjectType*
-AffineTransformCalculator<TFixedImageType, TMovingImageType>
-::GetTransformationOutput()
+template< class TFixedImageType, class TMovingImageType >
+typename AffineTransformCalculator< TFixedImageType, TMovingImageType >::TransformObjectType*
+AffineTransformCalculator< TFixedImageType, TMovingImageType >::GetTransformationOutput()
 {
-  return static_cast< TransformObjectType * >( this->ProcessObject::GetOutput(0) );
+  return static_cast< TransformObjectType * >(this->ProcessObject::GetOutput(0));
 }
 
-
-template <class TFixedImageType, class TMovingImageType>
-void AffineTransformCalculator<TFixedImageType, TMovingImageType>
-::GenerateData()
+template< class TFixedImageType, class TMovingImageType >
+void AffineTransformCalculator< TFixedImageType, TMovingImageType >::GenerateData()
 {
   // do the processing
 
@@ -53,100 +50,110 @@ void AffineTransformCalculator<TFixedImageType, TMovingImageType>
   this->RescaleImages();
 
   this->RigidRegistration();
-  this->AffineRegistration();
+  if (!m_IntraRegistration)
+  {
+    this->AffineRegistration();
+  }
+  else
+  {
+    m_AffineTransform->SetCenter(m_RigidTransform->GetCenter());
+    m_AffineTransform->SetTranslation(m_RigidTransform->GetTranslation());
+    m_AffineTransform->SetMatrix(m_RigidTransform->GetMatrix());
+  }
 
   this->GetTransformationOutput()->Set(m_AffineTransform);
+
 }
 
-
-template <class TFixedImageType, class TMovingImageType>
-void AffineTransformCalculator<TFixedImageType, TMovingImageType>
-::PrintSelf( std::ostream& os, Indent indent ) const
+template< class TFixedImageType, class TMovingImageType >
+void AffineTransformCalculator< TFixedImageType, TMovingImageType >::PrintSelf(
+    std::ostream& os, Indent indent) const
 {
-  Superclass::PrintSelf(os,indent);
+  Superclass::PrintSelf(os, indent);
 
-  os
-    << indent << "end of PrintSelf."
-    << std::endl;
+  os << indent << "end of PrintSelf." << std::endl;
 }
 
-template <class TFixedImageType, class TMovingImageType>
-void AffineTransformCalculator<TFixedImageType, TMovingImageType>
-::DownsampleImage()
+template< class TFixedImageType, class TMovingImageType >
+void AffineTransformCalculator< TFixedImageType, TMovingImageType >::DownsampleImage()
 {
   // resample image to isotropic resolution
 
-  typedef itk::ResampleImageFilter<TFixedImageType, TFixedImageType> ResamplerType;
+  typedef itk::ResampleImageFilter< TFixedImageType, TFixedImageType > ResamplerType;
   typename ResamplerType::Pointer resampler = ResamplerType::New();
 
-  typedef itk::IdentityTransform<double, SpaceDimension> TransformType;
+  typedef itk::IdentityTransform< double, SpaceDimension > TransformType;
   typename TransformType::Pointer transform = TransformType::New();
 
-  typedef itk::LinearInterpolateImageFunction<TFixedImageType, double> LinearInterpolatorType;
-  typename LinearInterpolatorType::Pointer lInterp = LinearInterpolatorType::New();
+  typedef itk::LinearInterpolateImageFunction< TFixedImageType, double > LinearInterpolatorType;
+  typename LinearInterpolatorType::Pointer lInterp =
+      LinearInterpolatorType::New();
 
   transform->SetIdentity();
-  resampler->SetTransform( transform );
-  resampler->SetInput( this->GetFixedImage() );
+  resampler->SetTransform(transform);
+  resampler->SetInput(this->GetFixedImage());
 
   typename FixedImageType::SpacingType spacing;
   typename FixedImageType::SizeType size;
-  for(unsigned int i=0;i<SpaceDimension;i++)
+  for (unsigned int i = 0; i < SpaceDimension; i++)
   {
     spacing[i] = 1.0;
     size[i] = (this->GetFixedImage()->GetLargestPossibleRegion().GetSize()[i])
-              *(this->GetFixedImage()->GetSpacing()[i])/spacing[i];
+        * (this->GetFixedImage()->GetSpacing()[i])
+              / spacing[i];
   }
 
   resampler->SetInterpolator(lInterp);
   resampler->SetSize(size);
   resampler->SetOutputSpacing(spacing);
-  resampler->SetOutputOrigin( this->GetFixedImage()->GetOrigin() );
-  resampler->SetOutputDirection( this->GetFixedImage()->GetDirection() );
-  resampler->SetDefaultPixelValue( 0 );
+  resampler->SetOutputOrigin(this->GetFixedImage()->GetOrigin());
+  resampler->SetOutputDirection(this->GetFixedImage()->GetDirection());
+  resampler->SetDefaultPixelValue(0);
 
   try
-    {
+  {
     resampler->Update();
-    }
+  }
   catch (itk::ExceptionObject &exception)
-    {
-    itkExceptionMacro("Exception caught during spatial resampling" << std::endl << exception)
-    }
+  {
+    itkExceptionMacro(
+        "Exception caught during spatial resampling" << std::endl << exception)
+  }
 
   m_FixedImage = resampler->GetOutput();
   m_FixedImage->DisconnectPipeline();
 }
 
-template <class TFixedImageType, class TMovingImageType>
-void AffineTransformCalculator<TFixedImageType, TMovingImageType>
-::RescaleImages()
+template< class TFixedImageType, class TMovingImageType >
+void AffineTransformCalculator< TFixedImageType, TMovingImageType >::RescaleImages()
 {
   // rescale patient image and atlas image intensities to 0-255
 
-  typedef itk::RescaleIntensityImageFilter<TFixedImageType, TFixedImageType> FixedRescalerType;
+  typedef itk::RescaleIntensityImageFilter< TFixedImageType, TFixedImageType > FixedRescalerType;
   typename FixedRescalerType::Pointer fixedRescaler = FixedRescalerType::New();
 
-  typedef itk::RescaleIntensityImageFilter<TMovingImageType, TMovingImageType> MovingRescalerType;
-  typename MovingRescalerType::Pointer movingRescaler = MovingRescalerType::New();
+  typedef itk::RescaleIntensityImageFilter< TMovingImageType, TMovingImageType > MovingRescalerType;
+  typename MovingRescalerType::Pointer movingRescaler =
+      MovingRescalerType::New();
 
-  fixedRescaler->SetInput( m_FixedImage );
-  fixedRescaler->SetOutputMinimum( 0 );
-  fixedRescaler->SetOutputMaximum( 255 );
+  fixedRescaler->SetInput(m_FixedImage);
+  fixedRescaler->SetOutputMinimum(0);
+  fixedRescaler->SetOutputMaximum(255);
 
-  movingRescaler->SetInput( this->GetMovingImage() );
-  movingRescaler->SetOutputMinimum( 0 );
-  movingRescaler->SetOutputMaximum( 255 );
+  movingRescaler->SetInput(this->GetMovingImage());
+  movingRescaler->SetOutputMinimum(0);
+  movingRescaler->SetOutputMaximum(255);
 
   try
-    {
+  {
     fixedRescaler->Update();
     movingRescaler->Update();
-    }
+  }
   catch (itk::ExceptionObject &exception)
-    {
-    itkExceptionMacro("Exception caught during intensity rescaling" << std::endl << exception)
-    }
+  {
+    itkExceptionMacro(
+        "Exception caught during intensity rescaling" << std::endl << exception)
+  }
 
   m_FixedImage = fixedRescaler->GetOutput();
   m_FixedImage->DisconnectPipeline();
@@ -155,189 +162,202 @@ void AffineTransformCalculator<TFixedImageType, TMovingImageType>
   m_MovingImage->DisconnectPipeline();
 }
 
-template <class TFixedImageType, class TMovingImageType>
-void AffineTransformCalculator<TFixedImageType, TMovingImageType>
-::RigidRegistration()
+template< class TFixedImageType, class TMovingImageType >
+void AffineTransformCalculator< TFixedImageType, TMovingImageType >::RigidRegistration()
 {
   // perform intial rigid alignment of atlas with patient image
   typedef itk::VersorRigid3DTransformOptimizer OptimizerType;
-  typedef itk::MattesMutualInformationImageToImageMetric<TFixedImageType, TMovingImageType> MetricType;
-  typedef itk::MultiResolutionImageRegistrationMethod<TFixedImageType, TMovingImageType> MultiResRegistrationType;
-  typedef itk::LinearInterpolateImageFunction<TMovingImageType, double> LinearInterpolatorType;
+  typedef itk::MattesMutualInformationImageToImageMetric< TFixedImageType,
+      TMovingImageType > MetricType;
+  typedef itk::MultiResolutionImageRegistrationMethod< TFixedImageType,
+      TMovingImageType > MultiResRegistrationType;
+  typedef itk::LinearInterpolateImageFunction< TMovingImageType, double > LinearInterpolatorType;
 
-  typename RigidTransformType::Pointer  transform = RigidTransformType::New();
+  typename RigidTransformType::Pointer transform = RigidTransformType::New();
   typename OptimizerType::Pointer optimizer = OptimizerType::New();
   typename MetricType::Pointer metric = MetricType::New();
-  typename MultiResRegistrationType::Pointer registration = MultiResRegistrationType::New();
-  typename LinearInterpolatorType::Pointer linearInterpolator = LinearInterpolatorType::New();
+  typename MultiResRegistrationType::Pointer registration =
+      MultiResRegistrationType::New();
+  typename LinearInterpolatorType::Pointer linearInterpolator =
+      LinearInterpolatorType::New();
 
-  metric->SetNumberOfHistogramBins( 64 );
-  metric->SetNumberOfSpatialSamples( 100000 ); // default number is too small
+  metric->SetNumberOfHistogramBins(64);
+  metric->SetNumberOfSpatialSamples(100000); // default number is too small
 
-  registration->SetMetric( metric );
-  registration->SetOptimizer( optimizer );
-  registration->SetInterpolator( linearInterpolator );
+  registration->SetMetric(metric);
+  registration->SetOptimizer(optimizer);
+  registration->SetInterpolator(linearInterpolator);
   //registration->SetNumberOfLevels( 3 );
 
   // perform registration only on subsampled image for speed gains
   typename MultiResRegistrationType::ScheduleType schedule;
-  schedule.SetSize(2,SpaceDimension);
+  schedule.SetSize(2, SpaceDimension);
 
-  for(unsigned int i=0;i<SpaceDimension;i++)
-    {
+  for (unsigned int i = 0; i < SpaceDimension; i++)
+  {
     schedule[0][i] = 4;
     schedule[1][i] = 2;
-    }
+  }
 
   registration->SetSchedules(schedule, schedule);
 
-  registration->SetFixedImageRegion( m_FixedImage->GetBufferedRegion() );
+  registration->SetFixedImageRegion(m_FixedImage->GetBufferedRegion());
 
-  registration->SetTransform( transform );
+  registration->SetTransform(transform);
 
-  registration->SetFixedImage( m_FixedImage );
-  registration->SetMovingImage( m_MovingImage );
+  registration->SetFixedImage(m_FixedImage);
+  registration->SetMovingImage(m_MovingImage);
 
   // transform initialization
-  typedef itk::CenteredTransformInitializer<RigidTransformType, TFixedImageType, TMovingImageType> TransformInitializerType;
-  typename TransformInitializerType::Pointer initializer = TransformInitializerType::New();
+  typedef itk::CenteredTransformInitializer< RigidTransformType,
+      TFixedImageType, TMovingImageType > TransformInitializerType;
+  typename TransformInitializerType::Pointer initializer =
+      TransformInitializerType::New();
 
-  initializer->SetTransform( transform );
-  initializer->SetFixedImage( m_FixedImage );
-  initializer->SetMovingImage( m_MovingImage );
+  initializer->SetTransform(transform);
+  initializer->SetFixedImage(m_FixedImage);
+  initializer->SetMovingImage(m_MovingImage);
 
   initializer->GeometryOn(); // geometry initialization because of multimodality
 
   try
-    {
+  {
     initializer->InitializeTransform();
-    }
+  }
   catch (itk::ExceptionObject &exception)
-    {
-    itkExceptionMacro("Exception caught during transform initialization " << std::endl << exception)
-    }
+  {
+    itkExceptionMacro(
+        "Exception caught during transform initialization " << std::endl << exception)
+  }
 
-  registration->SetInitialTransformParameters( transform->GetParameters() );
+  registration->SetInitialTransformParameters(transform->GetParameters());
 
   typedef OptimizerType::ScalesType OptimizerScalesType;
-  OptimizerScalesType optimizerScales( transform->GetNumberOfParameters() );
+  OptimizerScalesType optimizerScales(transform->GetNumberOfParameters());
   const double scale = 1.0;
-  const double translationScale = scale/2500;
+  const double translationScale = scale / 2500;
 
-  for(unsigned int i=0;i<SpaceDimension;i++)
-    {
+  for (unsigned int i = 0; i < SpaceDimension; i++)
+  {
     optimizerScales[i] = scale;
-    optimizerScales[SpaceDimension+i] = translationScale;
-    }
-  optimizer->SetScales( optimizerScales );
-  optimizer->SetMaximumStepLength( 0.05  );
-  optimizer->SetMinimumStepLength( 0.001 );
-  optimizer->SetNumberOfIterations( 250 );
+    optimizerScales[SpaceDimension + i] = translationScale;
+  }
+  optimizer->SetScales(optimizerScales);
+  optimizer->SetMaximumStepLength(0.05);
+  optimizer->SetMinimumStepLength(0.001);
+  optimizer->SetNumberOfIterations(250);
   optimizer->MinimizeOn();
 
   try
-    {
+  {
     registration->Update();
-    }
+  }
   catch (itk::ExceptionObject &exception)
-    {
-    itkExceptionMacro("Exception caught during rigid registration" << std::endl << exception)
-    }
+  {
+    itkExceptionMacro(
+        "Exception caught during rigid registration" << std::endl << exception)
+  }
 
-  typename OptimizerType::ParametersType finalParameters = registration->GetLastTransformParameters();
+  typename OptimizerType::ParametersType finalParameters =
+      registration->GetLastTransformParameters();
 
-  transform->SetParameters( finalParameters );
+  transform->SetParameters(finalParameters);
 
-  m_RigidTransform->SetCenter( transform->GetCenter() );
-  m_RigidTransform->SetParameters( finalParameters );
+  m_RigidTransform->SetCenter(transform->GetCenter());
+  m_RigidTransform->SetParameters(finalParameters);
 }
 
-
-template <class TFixedImageType, class TMovingImageType>
-void AffineTransformCalculator<TFixedImageType, TMovingImageType>
-::AffineRegistration()
+template< class TFixedImageType, class TMovingImageType >
+void AffineTransformCalculator< TFixedImageType, TMovingImageType >::AffineRegistration()
 {
   // perform refined affine alignment of atlas with patient image
 
   typedef itk::RegularStepGradientDescentOptimizer OptimizerType;
-  typedef itk::MattesMutualInformationImageToImageMetric<TFixedImageType, TMovingImageType> MetricType;
-  typedef itk::MultiResolutionImageRegistrationMethod<TFixedImageType, TMovingImageType> MultiResRegistrationType;
-  typedef itk::LinearInterpolateImageFunction<TMovingImageType, double> LinearInterpolatorType;
+  typedef itk::MattesMutualInformationImageToImageMetric< TFixedImageType,
+      TMovingImageType > MetricType;
+  typedef itk::MultiResolutionImageRegistrationMethod< TFixedImageType,
+      TMovingImageType > MultiResRegistrationType;
+  typedef itk::LinearInterpolateImageFunction< TMovingImageType, double > LinearInterpolatorType;
 
-  typename TransformType::Pointer  transform = TransformType::New();
+  typename TransformType::Pointer transform = TransformType::New();
   typename OptimizerType::Pointer optimizer = OptimizerType::New();
   typename MetricType::Pointer metric = MetricType::New();
-  typename MultiResRegistrationType::Pointer registration = MultiResRegistrationType::New();
-  typename LinearInterpolatorType::Pointer linearInterpolator = LinearInterpolatorType::New();
+  typename MultiResRegistrationType::Pointer registration =
+      MultiResRegistrationType::New();
+  typename LinearInterpolatorType::Pointer linearInterpolator =
+      LinearInterpolatorType::New();
 
-  metric->SetNumberOfHistogramBins( 64 );
-  metric->SetNumberOfSpatialSamples( 100000 ); // default number is too small
+  metric->SetNumberOfHistogramBins(64);
+  metric->SetNumberOfSpatialSamples(100000); // default number is too small
 
-  registration->SetMetric( metric );
-  registration->SetOptimizer( optimizer );
-  registration->SetInterpolator( linearInterpolator );
+  registration->SetMetric(metric);
+  registration->SetOptimizer(optimizer);
+  registration->SetInterpolator(linearInterpolator);
   //registration->SetNumberOfLevels( 3 );
 
   // perform registration only on subsampled image for speed gains
   typename MultiResRegistrationType::ScheduleType schedule;
-  schedule.SetSize(2,SpaceDimension);
-  for(unsigned int i=0;i<SpaceDimension;i++)
-    {
+  schedule.SetSize(2, SpaceDimension);
+  for (unsigned int i = 0; i < SpaceDimension; i++)
+  {
     schedule[0][i] = 4;
     schedule[1][i] = 2;
-    }
+  }
 
   registration->SetSchedules(schedule, schedule);
 
-  registration->SetFixedImageRegion( m_FixedImage->GetBufferedRegion() );
+  registration->SetFixedImageRegion(m_FixedImage->GetBufferedRegion());
 
-  registration->SetTransform( transform );
+  registration->SetTransform(transform);
 
-  registration->SetFixedImage( m_FixedImage );
-  registration->SetMovingImage( m_MovingImage );
+  registration->SetFixedImage(m_FixedImage);
+  registration->SetMovingImage(m_MovingImage);
 
-  transform->SetCenter( m_RigidTransform->GetCenter() );
-  transform->SetTranslation( m_RigidTransform->GetTranslation() );
-  transform->SetMatrix( m_RigidTransform->GetMatrix() );
+  transform->SetCenter(m_RigidTransform->GetCenter());
+  transform->SetTranslation(m_RigidTransform->GetTranslation());
+  transform->SetMatrix(m_RigidTransform->GetMatrix());
 
-  registration->SetTransform( transform );
+  registration->SetTransform(transform);
 
-  registration->SetInitialTransformParameters( transform->GetParameters() );
+  registration->SetInitialTransformParameters(transform->GetParameters());
 
   typedef OptimizerType::ScalesType OptimizerScalesType;
-  OptimizerScalesType optimizerScales( transform->GetNumberOfParameters() );
+  OptimizerScalesType optimizerScales(transform->GetNumberOfParameters());
   const double matrixScale = 1.0;
-  const double translationScale = matrixScale/200;
+  const double translationScale = matrixScale / 200;
 
-  for(unsigned int i=0;i<SpaceDimension*SpaceDimension;i++)
+  for (unsigned int i = 0; i < SpaceDimension * SpaceDimension; i++)
   {
-  optimizerScales[i] = matrixScale;
+    optimizerScales[i] = matrixScale;
   }
-  for(unsigned int i=SpaceDimension*SpaceDimension;i<SpaceDimension*(SpaceDimension+1);i++)
+  for (unsigned int i = SpaceDimension * SpaceDimension;
+      i < SpaceDimension * (SpaceDimension + 1); i++)
   {
-  optimizerScales[i] = translationScale;
+    optimizerScales[i] = translationScale;
   }
-  optimizer->SetScales( optimizerScales );
-  optimizer->SetMaximumStepLength( 0.05  );
-  optimizer->SetMinimumStepLength( 0.001 );
-  optimizer->SetNumberOfIterations( 200 );
+  optimizer->SetScales(optimizerScales);
+  optimizer->SetMaximumStepLength(0.05);
+  optimizer->SetMinimumStepLength(0.001);
+  optimizer->SetNumberOfIterations(200);
   optimizer->MinimizeOn();
 
   try
-    {
+  {
     registration->Update();
-    }
+  }
   catch (itk::ExceptionObject &exception)
-    {
-    itkExceptionMacro("Exception caught during Affine registration" << std::endl << exception)
-    }
+  {
+    itkExceptionMacro(
+        "Exception caught during Affine registration" << std::endl << exception)
+  }
 
-  typename OptimizerType::ParametersType finalParameters = registration->GetLastTransformParameters();
+  typename OptimizerType::ParametersType finalParameters =
+      registration->GetLastTransformParameters();
 
-  transform->SetParameters( finalParameters );
+  transform->SetParameters(finalParameters);
 
-  m_AffineTransform->SetCenter( transform->GetCenter() );
-  m_AffineTransform->SetParameters( finalParameters );
+  m_AffineTransform->SetCenter(transform->GetCenter());
+  m_AffineTransform->SetParameters(finalParameters);
 }
 
 } // end namespace itk

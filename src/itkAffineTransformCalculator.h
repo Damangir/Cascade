@@ -79,6 +79,9 @@ public:
     return this->GetTransformationOutput()->Get();
     }
 
+  itkGetConstMacro(IntraRegistration, bool);
+  itkSetMacro(IntraRegistration, bool);
+  itkBooleanMacro(IntraRegistration);
 protected:
 
   AffineTransformCalculator();
@@ -113,6 +116,7 @@ private:
   FixedImagePointer  m_FixedImage;
   MovingImagePointer m_MovingImage;
 
+  bool m_IntraRegistration;
   void RescaleImages();
   void DownsampleImage();
   void RigidRegistration();
