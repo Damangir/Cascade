@@ -139,8 +139,8 @@ int main(int argc, char *argv[])
       const float spread = hist->GetOutput()->Quantile(0, 0.75)
           - hist->GetOutput()->Quantile(0, 0.25);
 
-      possibleWMLThresh = CU::histogramMode(hist->GetOutput()->Begin(),
-                                            hist->GetOutput()->End())
+      possibleWMLThresh = CU::histogramMode<WeightedHistogramType::HistogramType>(hist->GetOutput()->Begin(),
+                                            hist->GetOutput()->End())[0]
                           + spread * 2;
       EmpiricalDistributionMembershipType::Pointer membership =
           EmpiricalDistributionMembershipType::New();

@@ -7,6 +7,7 @@
 #include "itkLogicOpsFunctors.h"
 #include "itkDiscreteGaussianImageFilter.h"
 
+#include "itkDisplacementFieldJacobianDeterminantFilter.h"
 #include "imageHelpers.h"
 namespace CU = cascade::util;
 
@@ -26,7 +27,7 @@ int main(int argc, char *argv[])
   std::string subjectImage(argv[1]);
   std::string brainTissue(argv[2]);
   std::string output(argv[3]);
-  float alpha = 1;
+  float alpha = 0.5;
   float beta = 0.5;
   if (argc > 4) alpha = atof(argv[4]);
   if (argc > 5) beta = atof(argv[5]);
@@ -122,15 +123,15 @@ int main(int argc, char *argv[])
     hist->SetHistogramSize(size);
     hist->SetInput(subjectImg);
     hist->SetWeightImage(
-        CU::MultiplyConstant< ClassifidImageType >(WMGMMask, 100).GetPointer());
+        CU::MultiplyConstant< ClassifidImageType >(GMMask, 100).GetPointer());
     hist->Update();
-    const float mode = CU::histogramMode(hist->GetOutput()->Begin(),
-                                         hist->GetOutput()->End());
+    const float mode = CU::histogramMode<WeightedHistogramType::HistogramType>(hist->GetOutput()->Begin(),
+                                         hist->GetOutput()->End())[0];
     const float spread = hist->GetOutput()->Quantile(0, 0.75)
         - hist->GetOutput()->Quantile(0, 0.25);
 
-    const float wmlThresh = mode + 1.5 * spread * alpha;
-
+    const float wmlThresh = hist->GetOutput()->Quantile(0, alpha);
+    std::cout << "Double check threshold: " << wmlThresh << std::endl;
     const unsigned int MaximumLevels = 5;
     const float variance = 2;
     lesionInGM = ClassifidImageType::New();
@@ -155,7 +156,7 @@ int main(int argc, char *argv[])
       typedef itk::BinaryThresholdImageFilter< ImageType, ClassifidImageType > ThresholdType;
       ThresholdType::Pointer thresh = ThresholdType::New();
       thresh->SetInput(levelImg);
-      if (alpha > 0)
+      if (alpha >= 0.5)
       {
         thresh->SetLowerThreshold(wmlThresh);
       }

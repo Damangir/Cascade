@@ -11,35 +11,27 @@ ELSE(ITK_FOUND)
 	MESSAGE(FATAL_ERROR"ITK 4.3+ not found. Please set ITK_DIR.")
 ENDIF(ITK_FOUND)
 
-add_executable(Shark shark.cxx)
-target_link_libraries(Shark ${ITK_LIBRARIES})
+# WML separation
+add_executable(EvidentNormal EvidentNormal.cxx)
+target_link_libraries(EvidentNormal ${ITK_LIBRARIES})
 
-add_executable(knn KNN.cxx)
-target_link_libraries(knn ${ITK_LIBRARIES})
+add_executable(TwoSampleKolmogorovSmirnovTest TwoSampleKolmogorovSmirnovTest.cxx)
+target_link_libraries(TwoSampleKolmogorovSmirnovTest ${ITK_LIBRARIES})
 
-add_executable(tts TTS.cxx)
-target_link_libraries(tts ${ITK_LIBRARIES})
+add_executable(OneSampleKolmogorovSmirnovTest OneSampleKolmogorovSmirnovTest.cxx)
+target_link_libraries(OneSampleKolmogorovSmirnovTest ${ITK_LIBRARIES})
 
-add_executable(atlas atlas.cxx)
-target_link_libraries(atlas ${ITK_LIBRARIES})
-
-add_executable(relabel relabel.cxx)
-target_link_libraries(relabel ${ITK_LIBRARIES})
-
-add_executable(linRegister linRegister.cxx)
-target_link_libraries(linRegister ${ITK_LIBRARIES})
-
-add_executable(resample resample.cxx)
-target_link_libraries(resample ${ITK_LIBRARIES})
-
-add_executable(resampleVector resampleVector.cxx)
-target_link_libraries(resampleVector ${ITK_LIBRARIES})
-
+# Inhomogeneity correction
 add_executable(inhomogeneity inhomogeneity.cxx)
 target_link_libraries(inhomogeneity ${ITK_LIBRARIES})
 
+# Brain extraction
 add_executable(brainExtraction brainExtraction.cxx)
 target_link_libraries(brainExtraction ${ITK_LIBRARIES})
+
+# Brain tissue segmentation tools
+add_executable(TissueTypeSegmentation TissueTypeSegmentation.cxx)
+target_link_libraries(TissueTypeSegmentation ${ITK_LIBRARIES})
 
 add_executable(extractCSF extractCSF.cxx)
 target_link_libraries(extractCSF ${ITK_LIBRARIES})
@@ -50,14 +42,33 @@ target_link_libraries(separateWG ${ITK_LIBRARIES})
 add_executable(refineBTS refineBTS.cxx)
 target_link_libraries(refineBTS ${ITK_LIBRARIES})
 
-add_executable(modelFree modelFree.cxx)
-target_link_libraries(modelFree ${ITK_LIBRARIES})
+# Reporting
+add_executable(atlas atlas.cxx)
+target_link_libraries(atlas ${ITK_LIBRARIES})
 
-add_executable(localFeature localFeature.cxx)
-target_link_libraries(localFeature ${ITK_LIBRARIES})
+add_executable(ReportMap ReportMap.cxx)
+target_link_libraries(ReportMap ${ITK_LIBRARIES})
 
-add_executable(combine combine.cxx)
-target_link_libraries(combine ${ITK_LIBRARIES})
+# Utilities
+add_executable(confusion confusion.cxx)
+target_link_libraries(confusion ${ITK_LIBRARIES})
 
-add_executable(ks ks.cxx)
-target_link_libraries(ks ${ITK_LIBRARIES})
+add_executable(relabel relabel.cxx)
+target_link_libraries(relabel ${ITK_LIBRARIES})
+
+add_executable(ComposeToVector ComposeToVector.cxx)
+target_link_libraries(ComposeToVector ${ITK_LIBRARIES})
+
+add_executable(linRegister linRegister.cxx)
+target_link_libraries(linRegister ${ITK_LIBRARIES})
+
+add_executable(resample resample.cxx)
+target_link_libraries(resample ${ITK_LIBRARIES})
+
+add_executable(resampleVector resampleVector.cxx)
+target_link_libraries(resampleVector ${ITK_LIBRARIES})
+
+# Future
+add_executable(Shark shark.cxx)
+target_link_libraries(Shark ${ITK_LIBRARIES})
+

@@ -10,6 +10,7 @@ import time
 
 import util.checkpython
 import util.terminalsize
+from warnings import catch_warnings
 
 runtimeString = time.strftime("%Y%m%d%H%M%S")
 
@@ -23,7 +24,7 @@ parser = ruffus.cmdline.get_argparse(description='Cascade academics: Segmentatio
                                      version = 'Cascade academics v. 1.1',
                                      ignored_args = ["key_legend_in_graph", "draw_graph_horizontally", 
                                                      "flowchart_format", "checksum_file_name", "recreate_database",
-                                                     "touch_files_only", "use_threads"])
+                                                     "use_threads"])
 
 # Output
 outputOptions = parser.add_argument_group('Output options')
@@ -43,8 +44,6 @@ inputOptions.add_argument('-s', '--t2',metavar='T2.nii.gz',
                     help='T2 image')
 
 generalOptions = parser.add_argument_group('General Options')
-generalOptions.add_argument('--levels', default=5, type=int,
-                    help='Number of levels to evaluate histogram.'+defaultStr)
 generalOptions.add_argument('--radius', default=1, type=float,
                     help='Radius of local histogram in millimeter.'+defaultStr)
 generalOptions.add_argument('-c', '--calculation-space',
@@ -80,17 +79,15 @@ modeOptions.add_argument('-d', '--model-dir',
                     help='Directory where the trained model located. This option'
                     'implies runing in train/test model and presume you have a '
                     'trained model stored in a directory.')
-
-
-simpleOptions = parser.add_argument_group('Simple mode options')
-simpleOptions.add_argument('--spread', default=2, type=float,
-                    help='Relative brightness/darkness of WML. It controls how'
-                         ' aggressive the pipeline will be. Higher spread, '
-                         'smaller lesion size.'+defaultStr)
+parser.add_argument('--all-tissues' , action='store_true', help='Create model for CSF,GM and WM. The model for WM will be created.')
 
 reportOptions = parser.add_argument_group('Reporting controls')
-reportOptions.add_argument('--threshold', default=0, type=float,
-                    help='Threshold used in the report.'+defaultStr)
+reportOptions.add_argument('--report-threshold', default=0.5, type=float,
+                    help='Probability threshold used in the report (0-1).'+defaultStr)
+reportOptions.add_argument('--report-radius', default=0, type=float,
+                    help='Minimum lesion radius to report (in mm).'+defaultStr)
+reportOptions.add_argument('--report-size', default=0, type=float,
+                    help='Minimum lesion size to report (in mm^3).'+defaultStr)
 
 options = parser.parse_args()
 logger, logger_mutex = ruffus.cmdline.setup_logging (__name__, options.log_file, options.verbose)
@@ -124,6 +121,7 @@ inputImages = {'T1':options.t1,
                'PD':options.pd,
                'FLAIR':options.flair
                }
+testDir = {'FLAIR': 'pos', 'T1':'neg', 'T2':'pos', 'PD':'pos'}
 
 inputImages = dict(filter(lambda x: x[1] is not None, inputImages.iteritems()))
 
@@ -143,13 +141,19 @@ calculationBase = inputImages[calculationSpace]
 cascadeManager = cascade.CascadeFileManager(options.root)
 cascadeManager.calcSpace = calculationSpace
 
+
 do_BrainExtract = True
 do_WMEstimate = True
 do_BTS = True
 has_atlas = False
 
+if options.all_tissues:
+    neededTissues = cascadeManager.brainTissueNames.values()
+else:
+    neededTissues = ['WM']
+    
 if testMode:
-    for i in product(inputImages.keys(), cascadeManager.brainTissueNames.values()):
+    for i in product(inputImages.keys(), neededTissues):
         modelName = os.path.join(options.model_dir, '.'.join(i) + '.model.nii.gz')
         print modelName
         if not os.path.exists(modelName):
@@ -201,7 +205,7 @@ def interaRegistration(input, output, manager):
         shutil.copy(cascade.config.Unity_Transform, transferFile)
         shutil.copy(cascade.config.Unity_Transform, invTransferFile)
     else:
-        cascade.binary_proxy.cascade_run('linRegister', [fixedImage, movingImage, transferFile, invTransferFile])
+        cascade.binary_proxy.cascade_run('linRegister', [fixedImage, movingImage, transferFile, invTransferFile, 'intra'])
         
     if movedImage != movingImage:
         cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile])
@@ -416,7 +420,7 @@ if do_WMEstimate:
     @ruffus.follows(brainExtraction)
     @ruffus.files(nmParam)      
     def normalizationMask(input, output, manager):
-        cascade.binary_proxy.cascade_run('tts', [input[0], input[1], output[0], input[2], input[3], input[4]], output)
+        cascade.binary_proxy.cascade_run('TissueTypeSegmentation', [input[0], input[1], output[0], input[2], input[3], input[4]], output)
         map_file = manager.getTempFilename('tts2norm_mask')
         with open(map_file, 'w') as f:
             f.write("0    0\n1    0\n2    0\n3    1");
@@ -442,6 +446,7 @@ if do_BTS:
     # BTS segmentation
     ###############################################################################
     def btsParam():
+        imgForNM = filter(lambda x:x in inputImages, ['T1', 'T2', 'PD', 'FLAIR'])[0]
         input = [cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace)]
 
         param = {
@@ -466,22 +471,39 @@ if do_BTS:
 
 
 if options.evident:
+    def evidentParam():
+        def getEvidentParam(mod):
+            return  [
+                     [
+                         cascadeManager.imageInSpace(mod.upper() + '.norm.nii.gz'),
+                         [cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz'),
+                         cascade.config.Evident,
+                         3]
+                     ],
+                     cascadeManager.imageInSpace(mod.upper() + '.evident.nii.gz'),
+                     cascadeManager
+                    ]
+
+        if 'FLAIR' in inputImages:                      
+            yield getEvidentParam('FLAIR')
+        elif 'T2' in inputImages:
+            yield getEvidentParam('T2')
+        else:
+            yield getEvidentParam('PD')
+        
+        yield getEvidentParam('T1')
+
+        
+    @ruffus.follows(normalize)        
     @ruffus.follows(brainTissueSegmentation)
-    @ruffus.transform(normalize, ruffus.regex(r'.*/(.*)/(.*).norm.nii.gz$'),
-                      ruffus.add_inputs([cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', cascadeManager.calcSpace),
-                                         options.radius, # variance (for smoothing in pyramid creation)
-                                         cascade.config.Spread,
-                                         options.levels, # number of levels to evaluate
-                                         ]),
-                      cascadeManager.imageInSpace(r'\2.evident.nii.gz', r'\1'),
-                      cascadeManager)
+    @ruffus.files(evidentParam)
     def trimEvident(input, output, manager):
-        cascade.binary_proxy.cascade_run('modelFree', [input[0],
-                                                       input[1][0],
-                                                       output,
-                                                       input[1][1],
-                                                       input[1][2][manager.getImageType(input[0])],
-                                                       input[1][3]], output)
+        cascade.binary_proxy.cascade_run('EvidentNormal', [input[0],     # Image
+                                                     input[1][0],  # Brain tissue segmentation
+                                                     output,       # Output
+                                                     # Percentile for the input image
+                                                     input[1][1][manager.getImageType(input[0])],
+                                                     input[1][2]], output)
     
     @ruffus.merge([trimEvident, brainTissueSegmentation],
                   cascadeManager.imageInSpace('possible.wml.nii.gz', cascadeManager.calcSpace)
@@ -489,9 +511,9 @@ if options.evident:
     def possibleArea(input, output):
         btsOutput = input[-1]
         input = input[:-1]
-        cascade.binary_proxy.fsl_run('fslmaths', [input[0], '-thr' , options.levels/2.0 ,'-bin', output])
+        cascade.binary_proxy.fsl_run('fslmaths', [input[0] ,'-bin', output])
         for i in input[1:]:
-            cascade.binary_proxy.fsl_run('fslmaths', [i, '-thr' , options.levels/2.0 , '-add', output ,'-bin', output])
+            cascade.binary_proxy.fsl_run('fslmaths', [i, '-add', output ,'-bin', output])
     
         cascade.binary_proxy.fsl_run('fslmaths', [output, '-mul' , -1, '-add', 1, output])
         cascade.binary_proxy.fsl_run('fslmaths', [btsOutput, '-add', 1,'-thr', 4, '-bin', '-mul', output, output])
@@ -507,35 +529,33 @@ else:
 # mark evidently normal brain
 ###############################################################################
 def modelFreeParam():
-    imgForModelFree = filter(lambda x:x in inputImages, ['FLAIR', 'T2', 'PD'])[0]
-    inImages = [cascadeManager.imageInSpace(imgForModelFree + '.norm.nii.gz', cascadeManager.calcSpace),
-                cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', cascadeManager.calcSpace),
-                options.radius, # variance (for smoothing in pyramid creation)
-                options.spread, # alpha (spread, its sign controls whether MWL is dark or bright.)
-                options.levels, # number of levels to evaluate
-                cascadeManager.imageInSpace('possible.wml.nii.gz', cascadeManager.calcSpace)
-                ]
+    testDir = {'FLAIR': 'pos', 'T1':'neg', 'T2':'pos', 'PD':'pos'}
+    for img in inputImages.keys():
+        inImages = [cascadeManager.imageInSpace(img + '.norm.nii.gz', cascadeManager.calcSpace),
+                    cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', cascadeManager.calcSpace),
+                    options.radius, # Radius for histogram creation in mm
+                    cascadeManager.imageInSpace('possible.wml.nii.gz', cascadeManager.calcSpace)
+                    ]
     
-    outImages = [
-                cascadeManager.imageInSpace('model.free.wml.nii.gz', cascadeManager.calcSpace),
-                ]
-   
-    params = [
-              inImages,
-              outImages,
-              ]
-    yield params
+        outImages = [
+                    cascadeManager.imageInSpace(img+'.model.free.nii.gz', cascadeManager.calcSpace),
+                    ]
+       
+        params = [
+                  inImages,
+                  outImages,
+                  [cascadeManager,testDir[img]]
+                  ]
+        yield params
 
 @ruffus.follows(possibleArea)
 @ruffus.follows(brainTissueSegmentation)
 @ruffus.follows(normalize)
 @ruffus.files(modelFreeParam)
-def modelFreeSegmentation(input, output):
-    possible = input[-1]
-    input = input[:-1]
-    cascade.binary_proxy.cascade_run('modelFree', input[:2] + output + input[2:], output)
-    cascade.binary_proxy.fsl_run('fslmaths', [possible, '-bin','-mul', output[0], output[0]])
-
+def modelFreeSegmentation(input, output, extra):
+    wm = extra[0].getTempFilename('WM.nii.gz')
+    cascade.binary_proxy.fsl_run('fslmaths', [input[1], '-thr',3, '-bin', wm])
+    cascade.binary_proxy.cascade_run('OneSampleKolmogorovSmirnovTest', [wm,wm, input[0], output[0], input[2], extra[1]] , output)
 
 
 ###############################################################################
@@ -582,40 +602,13 @@ if trainMode:
         cascade.util.ensureDirPresence(output)
         cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile], movedImage)
 
-###############################################################################
-# Creat local feature of each normalized image
-###############################################################################
-    @ruffus.follows(resampleBTSToStandard)
-    @ruffus.transform(resampleToStandard, ruffus.regex(r'.*/(.*)/(.*).norm.nii.gz$'),
-                      cascadeManager.imageInSpace(r'\2.feature.nii.gz', r'\1'),
-                      cascadeManager)
-    def stdLocalFeature(input, output, manager):
-        cascade.binary_proxy.cascade_run('localFeature', [input,
-                                                          manager.imageInSpace('brainTissueSegmentation.nii.gz', 'STD'),
-                                                          output,
-                                                          options.radius,
-                                                          options.levels], output)
-
 if testMode:
-###############################################################################
-# Creat local feature of each normalized image
-###############################################################################
-    @ruffus.transform(normalize, ruffus.regex(r'.*/(.*)/(.*).norm.nii.gz$'),
-                      cascadeManager.imageInSpace(r'\2.feature.nii.gz', r'\1'),
-                      cascadeManager)
-    def localFeature(input, output, manager):
-        cascade.binary_proxy.cascade_run('localFeature', [input,
-                                                          manager.imageInSpace('brain_mask.nii.gz', manager.calcSpace),
-                                                          output,
-                                                          options.radius,
-                                                          options.levels], output)
-
 ###############################################################################
 # Register normal model to the calculation space
 ###############################################################################
     def registerModelParam():
         modelPrefix = ''
-        for i in product(inputImages.keys(), cascadeManager.brainTissueNames.values()):
+        for i in product(inputImages.keys(), neededTissues):
             modelName = '.'.join(i) + '.model.nii.gz'
             params = [
                       (
@@ -635,29 +628,36 @@ if testMode:
         movingImage = input[0]
         movedImage = output
         cascade.util.ensureDirPresence(output)
-        cascade.binary_proxy.cascade_run('resampleVector', [fixedImage, movingImage, movedImage, transferFile], movedImage)
+        cascade.binary_proxy.cascade_run('resampleVector', [fixedImage, movingImage, movedImage, transferFile, 'nn'], movedImage)
 
-    @ruffus.collate(registerModel,
-                    ruffus.regex(r'.*/(.*)\.(.*).model.nii.gz'),
-                    cascadeManager.imageInSpace(r'\1.model.nii.gz', os.path.join(cascadeManager.calcSpace, 'model')),
-                    cascadeManager)    
-    def createIndividualModel(input, output, manager):
-        map = manager.imageInSpace('brainTissueSegmentation.nii.gz', manager.calcSpace)
-        input = [
-                 filter(lambda x:'CSF' in os.path.basename(x), input)[0],
-                 filter(lambda x:'GM' in os.path.basename(x), input)[0],
-                 filter(lambda x:'WM' in os.path.basename(x), input)[0],
-                 ]
-        cascade.binary_proxy.cascade_run('combine', [map, output] + inputs, output)
 ###############################################################################
 # Kolmogorov Smirnov to find p-value of each image with respect to model
+# " Reference TestArea Input Output Radius [pos/neg]"
 ###############################################################################
-    @ruffus.collate([localFeature, createIndividualModel],
-                    ruffus.regex(r'.*/(.*)\..*.nii.gz'),
-                    cascadeManager.imageInSpace(r'\1.pvalue.nii.gz', cascadeManager.calcSpace),
-                    cascadeManager)
+    def KolmogorovSmirnovParam():
+        modelPrefix = ''
+        for i in product(inputImages.keys(), neededTissues):
+            modelName = '.'.join(i) + '.model.nii.gz'
+            inImages = [
+                      cascadeManager.imageInSpace(modelName, os.path.join(cascadeManager.calcSpace, 'model')), # Reference
+                      cascadeManager.imageInSpace(i[0] + '.norm.nii.gz', cascadeManager.calcSpace),
+                      cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', cascadeManager.calcSpace),
+                      options.radius, # Radius for histogram creation in mm
+                      ]
+            outImages = [
+                    cascadeManager.imageInSpace(img+'.KS.nii.gz', cascadeManager.calcSpace),
+                    ]
+            params = [
+                  inImages,
+                  outImages,
+                  [cascadeManager,testDir[img]]
+                  ]
+            yield params
+
     def KolmogorovSmirnov(input, output, manager):
-        cascade.binary_proxy.cascade_run('ks', [input[0], input[1], output], output)
+        wm = extra[0].getTempFilename('WM.nii.gz')
+        cascade.binary_proxy.fsl_run('fslmaths', [input[2], '-thr',3, '-bin', wm])
+        cascade.binary_proxy.cascade_run('TwoSampleKolmogorovSmirnovTest', [input[0],wm, input[1], output[0], input[3], extra[1]] , output)
 
 if has_atlas and not testMode:
     options.target_tasks = ['report']
@@ -697,16 +697,19 @@ if has_atlas and not testMode:
 
 if __name__ == '__main__':
     if not any([options.flowchart, options.just_print]):
-        ruffus.pipeline_printout_graph (open(cascadeManager.reportName("chart.svg", runtimeString), "w"),
-                                        "svg",
-                                        options.target_tasks,
-                                        options.forced_tasks,
-                                        draw_vertically = True,
-                                        no_key_legend   = True,
-                                        minimal_key_legend = True,
-                                        pipeline_name = 'Cascade pipeline')
-        with open(cascadeManager.reportName("args.log", runtimeString), "w") as text_file:
-            for p in vars(options).iteritems():
-                text_file.write("{} {}\n".format(*p))    
+        try:
+            ruffus.pipeline_printout_graph (open(cascadeManager.reportName("chart.svg", runtimeString), "w"),
+                                            "svg",
+                                            options.target_tasks,
+                                            options.forced_tasks,
+                                            draw_vertically = True,
+                                            no_key_legend   = True,
+                                            minimal_key_legend = True,
+                                            pipeline_name = 'Cascade pipeline')
+            with open(cascadeManager.reportName("args.log", runtimeString), "w") as text_file:
+                for p in vars(options).iteritems():
+                    text_file.write("{} {}\n".format(*p))
+        except:
+            pass    
 
     ruffus.cmdline.run (options, pipeline_name = 'Cascade pipeline')

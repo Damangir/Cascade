@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
   {
     std::cerr << "Missing Parameters " << std::endl;
     std::cerr << "Usage: " << argv[0];
-    std::cerr << " fixedImage movingImage transferFile [invTransFile]";
+    std::cerr << " fixedImage movingImage transferFile [invTransFile] [mode=intra]";
     std::cerr << std::endl;
     return EXIT_FAILURE;
   }
@@ -23,7 +23,10 @@ int main(int argc, char *argv[])
   std::string transferFile(argv[3]);
 
   std::string invTransferFile;
-  if (argc == 5) invTransferFile = argv[4];
+  if (argc > 4) invTransferFile = argv[4];
+
+  std::string mode;
+  if (argc > 5) mode = argv[5];
 
   const unsigned int ImageDimension = 3;
   typedef signed short PixelType;
@@ -45,6 +48,13 @@ int main(int argc, char *argv[])
 
     affineCalculator->SetFixedImage(fixedImageReader->GetOutput());
     affineCalculator->SetMovingImage(movingImageReader->GetOutput());
+    if (mode == "intra")
+    {
+      affineCalculator->IntraRegistrationOn();
+    }else
+    {
+      affineCalculator->IntraRegistrationOff();
+    }
     affineCalculator->Update();
     itk::TransformFileWriter::Pointer transWriter;
     transWriter = itk::TransformFileWriter::New();

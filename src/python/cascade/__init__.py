@@ -124,7 +124,9 @@ class CascadeFileManager(object):
     def qcDir(self):
         return os.path.join(self.root, self._qc_dir)
 
-    def imageInSpace(self, image, space):
+    def imageInSpace(self, image, space=None):
+        if not space:
+            space = self.calcSpace
         if space[0] != '\\':
             util.ensureDirectory(os.path.join(self.imageDir, space))
         return os.path.join(self.imageDir, space, image)

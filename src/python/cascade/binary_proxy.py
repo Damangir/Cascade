@@ -76,18 +76,23 @@ def fsl_run(fslcmd, fslargs, output_files=None):
 cascadeCommands = ['linRegister',
                    'resample',
                    'resampleVector',
+                   'ComposeToVector',
+                   
                    'inhomogeneity',
                    'brainExtraction',
+
+                   'relabel',
+
                    'extractCSF',
                    'separateWG',
                    'refineBTS',
-                   'modelFree',
-                   'localFeature',
-                   'ks',
-                   'combine',
-                   'relabel',
+                   'TissueTypeSegmentation',
+                   
+                   'EvidentNormal',
+                   'OneSampleKolmogorovSmirnovTest',
+                   'TwoSampleKolmogorovSmirnovTest',
+
                    'atlas',
-                   'tts'
                    ]
 
 for cascadecmd in cascadeCommands:

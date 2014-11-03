@@ -242,10 +242,8 @@ typename ImageT::Pointer Duplicate(const ImageT* image)
   output->SetRequestedRegion(image->GetRequestedRegion());
   output->SetBufferedRegion(image->GetBufferedRegion());
   output->Allocate();
-  typename ImageT::RegionType region =
-      image->GetLargestPossibleRegion();
-  itk::ImageAlgorithm::Copy(image, output.GetPointer(), region,
-                       region);
+  typename ImageT::RegionType region = image->GetLargestPossibleRegion();
+  itk::ImageAlgorithm::Copy(image, output.GetPointer(), region, region);
   return output;
 }
 
@@ -279,6 +277,7 @@ typename ImageT::Pointer CropImage(const ImageT* image,
 #endif
   DispatchFilterOutput(croppingFilter, typename ImageT::Pointer);
 }
+
 template< class ImageT >
 typename ImageT::Pointer LoadImage(std::string filename)
 {
@@ -345,20 +344,55 @@ typename ImageT2::Pointer Cast(const ImageT* img1)
 }
 
 template< class HistIteratorT >
-float histogramMode(HistIteratorT iter, HistIteratorT iterEnd)
+typename HistIteratorT::MeasurementVectorType histogramMode(
+    typename HistIteratorT::ConstIterator iter,
+    typename HistIteratorT::ConstIterator iterEnd)
 {
   float maxFreq = 0;
-  float maxFreqIntensity = 0;
+  typename HistIteratorT::MeasurementVectorType maxFreqIntensity;
   while (iter != iterEnd)
   {
     if (maxFreq < iter.GetFrequency())
     {
-      maxFreqIntensity = iter.GetMeasurementVector()[0];
+      maxFreqIntensity = iter.GetMeasurementVector();
       maxFreq = iter.GetFrequency();
     }
     ++iter;
   }
   return maxFreqIntensity;
+}
+
+template< class ImageT >
+size_t CountNEq(const ImageT* image, const typename ImageT::PixelType& p)
+{
+  size_t count = 0;
+  itk::ImageRegionConstIterator< ImageT > it(image,
+                                             image->GetLargestPossibleRegion());
+  while (!it.IsAtEnd())
+  {
+    if (it.Get() != p)
+    {
+      count++;
+    }
+    ++it;
+  }
+  return count;
+}
+template< class ImageT >
+size_t CountEq(const ImageT* image, const typename ImageT::PixelType& p)
+{
+  size_t count = 0;
+  itk::ImageRegionConstIterator< ImageT > it(image,
+                                             image->GetLargestPossibleRegion());
+  while (!it.IsAtEnd())
+  {
+    if (it.Get() == p)
+    {
+      count++;
+    }
+    ++it;
+  }
+  return count;
 }
 
 }  // namespace util

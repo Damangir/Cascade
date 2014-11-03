@@ -33,12 +33,11 @@ FreeSurfer_To_BrainTissueSegmentation=os.path.join(DataDir, 'map', 'FS_label.map
 FreeSurfer_Label_Names=os.path.join(DataDir, 'map', 'FS_label_name.map.txt')
 Unity_Transform=os.path.join(DataDir, 'transform', 'unity.tfm')
 
-
 epsilon = 0.00001
 
-Spread = {
-          'T1': 0.5,
-          'FLAIR': -epsilon,
-          'T2': -epsilon,
-          'PD': -0.5,
+Evident = {
+          'T1': -0.90,
+          'FLAIR': 0.5,
+          'T2': 0.3,
+          'PD': 0.1,
           }
