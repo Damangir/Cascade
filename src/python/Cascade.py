@@ -14,8 +14,6 @@ from warnings import catch_warnings
 
 runtimeString = time.strftime("%Y%m%d%H%M%S")
 
-# TODO: Purge unused scripts
-
 # Fix the envirnment variable for width. It is not corectly set on all platforms
 os.environ['COLUMNS'] = str(util.terminalsize.get_terminal_size()[0])
 defaultStr = ' (default: %(default)s)'
