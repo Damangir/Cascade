@@ -1,6 +1,9 @@
 build/
 .DS_Store
 *.pyc
+*_
+.ruffus*
+
 
 CMakeCache.txt
 CMakeFiles
