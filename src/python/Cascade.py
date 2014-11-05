@@ -583,7 +583,7 @@ if trainMode:
     def resampleBTSToStandard(input, output, manager):
         fixedImage = cascade.config.StandardBrainMask
         transferFile = input[1][1]
-        movingImage = input[0][0]
+        movingImage = input[0]
         movedImage = output
         cascade.util.ensureDirPresence(output)
         cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile, 'nn'], movedImage)

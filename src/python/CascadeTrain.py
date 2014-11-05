@@ -76,7 +76,6 @@ def ModelTissueParam():
                 inputs.append(tissueImg)
             yield [inputs, modelName]
 
-# " VectorOutput Img1 [Img2 [Img3 ...]]"
 @ruffus.files(ModelTissueParam)
 def ModelTissue(input, output):
     cascade.binary_proxy.cascade_run('ComposeToVector', [output]+input, output)
