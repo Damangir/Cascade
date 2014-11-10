@@ -100,6 +100,7 @@ void NeighborhoodTwoSampleKSImageFilter< TInputImage, TReferenceImage, Probabili
       ++maskIt;
       ++bit;
       ++it;
+      ++rit;
       progress.CompletedPixel();
     }
   }

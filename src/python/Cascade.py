@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import sys
 import os
 import shutil
@@ -643,16 +642,18 @@ if testMode:
                       options.radius, # Radius for histogram creation in mm
                       ]
             outImages = [
-                    cascadeManager.imageInSpace(img+'.KS.nii.gz', cascadeManager.calcSpace),
+                    cascadeManager.imageInSpace(i[0]+'.KS.nii.gz', cascadeManager.calcSpace),
                     ]
             params = [
                   inImages,
                   outImages,
-                  [cascadeManager,testDir[img]]
+                  [cascadeManager,testDir[i[0]]]
                   ]
             yield params
-
-    def KolmogorovSmirnov(input, output, manager):
+            
+    @ruffus.follows(registerModel)
+    @ruffus.files(KolmogorovSmirnovParam)
+    def KolmogorovSmirnov(input, output, extra):
         wm = extra[0].getTempFilename('WM.nii.gz')
         cascade.binary_proxy.fsl_run('fslmaths', [input[2], '-thr',3, '-bin', wm])
         cascade.binary_proxy.cascade_run('TwoSampleKolmogorovSmirnovTest', [input[0],wm, input[1], output[0], input[3], extra[1]] , output)

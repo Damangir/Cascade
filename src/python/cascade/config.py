@@ -1,21 +1,15 @@
 import os
 
 ScriptDir=os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-InSource=os.path.basename(ScriptDir) == 'python'
+CascadeDir=os.path.dirname(os.path.dirname(ScriptDir))
 
+InSource= os.path.basename(os.path.dirname(ScriptDir)) == 'src'
 if InSource:
-    CascadeDir=os.path.dirname(os.path.dirname(ScriptDir))
     ExecDir=os.path.join(CascadeDir, 'build')
     DataDir=os.path.join(CascadeDir, 'data')
 else:
-    raise Exception ('Installed version not fully supported.')
-    for p in os.environ["PATH"].split(os.pathsep) + [ScriptDir] :
-        if os.path.exists(os.path.join(p, 'cascade-range')):
-            ExecDir=p
-    if not ExecDir:
-        raise Exception("Can not locate Cascade binaries.")
-
-
+    ExecDir=os.path.join(CascadeDir, 'bin')
+    DataDir=os.path.join(CascadeDir, 'share', 'data')
 
 StandardDir=os.path.join(DataDir, 'std')
 

@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
   }
   else
   {
+    std::cerr << "Positive direction" << std::endl;
     ks->PositiveOn();
   }
   std::cerr << "Start searching" << std::endl;

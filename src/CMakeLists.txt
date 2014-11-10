@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 2.8)
 
 PROJECT(CascadeAcademic)
 
+set (Cascade_VERSION_MAJOR 1)
+set (Cascade_VERSION_MINOR 0)
+
 SET(CMAKE_BUILD_TYPE DEBUG)
 
 FIND_PACKAGE(ITK 4.3 REQUIRED)
@@ -50,6 +53,9 @@ add_executable(ReportMap ReportMap.cxx)
 target_link_libraries(ReportMap ${ITK_LIBRARIES})
 
 # Utilities
+add_executable(DICOMReader DICOMReader.cxx)
+target_link_libraries(DICOMReader ${ITK_LIBRARIES})
+
 add_executable(confusion confusion.cxx)
 target_link_libraries(confusion ${ITK_LIBRARIES})
 
@@ -69,6 +75,23 @@ add_executable(resampleVector resampleVector.cxx)
 target_link_libraries(resampleVector ${ITK_LIBRARIES})
 
 # Future
-add_executable(Shark shark.cxx)
-target_link_libraries(Shark ${ITK_LIBRARIES})
+#add_executable(OneSampleRingKolmogorovSmirnovTest OneSampleRingKolmogorovSmirnovTest.cxx)
+#target_link_libraries(OneSampleRingKolmogorovSmirnovTest ${ITK_LIBRARIES})
 
+add_executable(CollapseModel CollapseModel.cxx)
+target_link_libraries(CollapseModel ${ITK_LIBRARIES})
+
+
+install(TARGETS EvidentNormal TwoSampleKolmogorovSmirnovTest OneSampleKolmogorovSmirnovTest inhomogeneity brainExtraction TissueTypeSegmentation extractCSF separateWG refineBTS atlas ReportMap confusion relabel ComposeToVector linRegister resample resampleVector
+        DESTINATION bin)
+        
+install(DIRECTORY python
+		DESTINATION bin
+		PATTERN ".pyc" EXCLUDE
+		PATTERN "Cascade*.py"
+        PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                    GROUP_EXECUTE GROUP_READ
+                    WORLD_EXECUTE WORLD_READ)
+		
+install(DIRECTORY ../data
+		DESTINATION share )

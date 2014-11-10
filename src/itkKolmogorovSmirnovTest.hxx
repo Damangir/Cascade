@@ -66,11 +66,11 @@ double KolmogorovSmirnovTest< TMeasurement >::Evaluate(
   }
   if (this->GetPositive())
   {
-    return dp;
+    return dp>dn?dp:0;
   }
   else
   {
-    return dn;
+    return dn>dp?dn:0;
   }
 }
 

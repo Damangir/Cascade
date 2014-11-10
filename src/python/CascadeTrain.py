@@ -18,8 +18,6 @@ parser.add_argument('--flair' , action='store_true', help='Create model for FLAI
 parser.add_argument('--pd' , action='store_true', help='Create model for PD images')
 parser.add_argument('--t2' , action='store_true', help='Create model for T2 images')
 
-parser.add_argument('--calculation-space', required=True, choices=['T1', 'T2', 'FLAIR', 'PD'], help='Calculation space')
-
 parser.add_argument('--all-tissues' , action='store_true', help='Create model for CSF,GM and WM. The model for WM will be created.')
 
 parser.add_argument('--model-dir', default='.', help='Directory for the output model')
@@ -76,6 +74,7 @@ def ModelTissueParam():
                 inputs.append(tissueImg)
             yield [inputs, modelName]
 
+@ruffus.follows(ExtractTissueImages)
 @ruffus.files(ModelTissueParam)
 def ModelTissue(input, output):
     cascade.binary_proxy.cascade_run('ComposeToVector', [output]+input, output)
