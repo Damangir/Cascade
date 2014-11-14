@@ -657,13 +657,6 @@ if testMode:
         cascade.binary_proxy.fsl_run('fslmaths', [input[2], '-thr',3, '-bin', wm])
         cascade.binary_proxy.cascade_run('TwoSampleKolmogorovSmirnovTest', [input[0],wm, input[1], output[0], input[3], extra[1]] , output)
 
-reportOptions.add_argument('--report-threshold', default=0.5, type=float,
-                    help='Probability threshold used in the report (0-1).'+defaultStr)
-reportOptions.add_argument('--report-radius', default=0, type=float,
-                    help='Minimum lesion radius to report (in mm).'+defaultStr)
-reportOptions.add_argument('--report-size', default=0, type=float,
-                    help='Minimum lesion size to report (in mm^3).'+defaultStr)
-
 if has_atlas and not testMode:
     options.target_tasks = ['report']
     def reportParam():
