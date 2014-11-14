@@ -76,7 +76,7 @@ modeOptions.add_argument('-d', '--model-dir',
                     help='Directory where the trained model located. This option'
                     'implies runing in train/test model and presume you have a '
                     'trained model stored in a directory.')
-parser.add_argument('--all-tissues' , action='store_true', help='Create model for CSF,GM and WM. The model for WM will be created.')
+modeOptions.add_argument('--all-tissues' , action='store_true', help='Create model for CSF,GM and WM. The model for WM will be created.')
 
 reportOptions = parser.add_argument_group('Reporting controls')
 reportOptions.add_argument('--report-threshold', default=0.5, type=float,
@@ -276,7 +276,7 @@ if options.freesurfer:
     
     def fsImport():
         inImages = [
-                    os.path.join(options.freesurfer, 'mri', 'rawavg.mgz'),
+                    cascadeManager.imageInSpace('T1.nii.gz', 'T1'),
                     os.path.join(options.freesurfer, 'mri', 'aseg.mgz'),
                     os.path.join(options.freesurfer, 'mri', 'wmparc.mgz'),
                    ]
@@ -403,9 +403,8 @@ if do_WMEstimate:
                     cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace), #GM
                     cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace), #WM
                    ]
-        outImages = [
-                    cascadeManager.imageInSpace('norm.mask.nii.gz', cascadeManager.calcSpace),
-                    ]
+        outImages = cascadeManager.imageInSpace('norm.mask.nii.gz', cascadeManager.calcSpace)
+                    
        
         params = [
                   inImages,
@@ -417,12 +416,12 @@ if do_WMEstimate:
     @ruffus.follows(brainExtraction)
     @ruffus.files(nmParam)      
     def normalizationMask(input, output, manager):
-        cascade.binary_proxy.cascade_run('TissueTypeSegmentation', [input[0], input[1], output[0], input[2], input[3], input[4]], output)
+        cascade.binary_proxy.cascade_run('TissueTypeSegmentation', [input[0], input[1], output, input[2], input[3], input[4]], output)
         map_file = manager.getTempFilename('tts2norm_mask')
         with open(map_file, 'w') as f:
             f.write("0    0\n1    0\n2    0\n3    1");
         
-        cascade.binary_proxy.cascade_run('relabel', [output[0], map_file, output[0]], output[0])
+        cascade.binary_proxy.cascade_run('relabel', [output, map_file, output], output)
     
 
 ###############################################################################
@@ -435,7 +434,7 @@ if do_WMEstimate:
                               cascadeManager.imageInSpace('{basename[0][0]}.norm{ext[0][0]}', cascadeManager.calcSpace),
                               cascadeManager)
 def normalize(input, output, manager):
-    cascade.binary_proxy.cascade_run('inhomogeneity', [input[0][0], input[1][0], output], output)
+    cascade.binary_proxy.cascade_run('inhomogeneity', [input[0][0], input[1], output], output)
 
 
 if do_BTS:
@@ -658,6 +657,13 @@ if testMode:
         cascade.binary_proxy.fsl_run('fslmaths', [input[2], '-thr',3, '-bin', wm])
         cascade.binary_proxy.cascade_run('TwoSampleKolmogorovSmirnovTest', [input[0],wm, input[1], output[0], input[3], extra[1]] , output)
 
+reportOptions.add_argument('--report-threshold', default=0.5, type=float,
+                    help='Probability threshold used in the report (0-1).'+defaultStr)
+reportOptions.add_argument('--report-radius', default=0, type=float,
+                    help='Minimum lesion radius to report (in mm).'+defaultStr)
+reportOptions.add_argument('--report-size', default=0, type=float,
+                    help='Minimum lesion size to report (in mm^3).'+defaultStr)
+
 if has_atlas and not testMode:
     options.target_tasks = ['report']
     def reportParam():
@@ -668,7 +674,7 @@ if has_atlas and not testMode:
 
         inImages = [finalOutput,
                     cascadeManager.imageInSpace('atlas.nii.gz', cascadeManager.calcSpace),
-                    float(options.threshold),
+                    float(options.report_threshold),
                     cascade.config.FreeSurfer_Label_Names
                     ]
         outImages = [

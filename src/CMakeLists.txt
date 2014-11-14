@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-PROJECT(CascadeAcademic)
+PROJECT(Cascade)
 
 set (Cascade_VERSION_MAJOR 1)
 set (Cascade_VERSION_MINOR 0)
@@ -53,6 +53,9 @@ add_executable(ReportMap ReportMap.cxx)
 target_link_libraries(ReportMap ${ITK_LIBRARIES})
 
 # Utilities
+add_executable(LabelImageOpening LabelImageOpening.cxx)
+target_link_libraries(LabelImageOpening ${ITK_LIBRARIES})
+
 add_executable(DICOMReader DICOMReader.cxx)
 target_link_libraries(DICOMReader ${ITK_LIBRARIES})
 

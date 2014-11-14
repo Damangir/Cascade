@@ -74,11 +74,12 @@ if not all([options.csf, options.gm, options.wm]):
     parser.error('You should specify all or no prior')
 
 import atexit, tempfile
-safe_tmp_dir = tempfile.mkdtemp()
-@atexit.register
-def cleanAfter():
-    shutil.rmtree(safe_tmp_dir)
+#safe_tmp_dir = tempfile.mkdtemp()
+#@atexit.register
+#def cleanAfter():
+#    shutil.rmtree(safe_tmp_dir)
 
+safe_tmp_dir="."
 if not options.intermediate:
     options.intermediate = safe_tmp_dir
 

@@ -22,17 +22,18 @@
 
 namespace CU = cascade::util;
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
   if (argc < 6)
-  {
+    {
     std::cerr << "Missing Parameters " << std::endl;
     std::cerr << "Usage: " << argv[0];
     std::cerr
         << " image brainMask btOutput Prior1 Prior2 [Prior3 [Prior4 ...]] ";
     std::cerr << std::endl;
     return EXIT_FAILURE;
-  }
+    }
 
   ::itk::Object::GetGlobalWarningDisplay();
 
@@ -63,23 +64,23 @@ int main(int argc, char *argv[])
       originalImage, maskImg);
 
   ProbabilityVectorImageType::Pointer priorImage;
-  {
+    {
     typedef itk::ComposeImageFilter< ProbabilityImageType,
         ProbabilityVectorImageType > ProbabilityComposerType;
     ProbabilityComposerType::Pointer probabilityComposer =
         ProbabilityComposerType::New();
     for (size_t i = 0; i < numberOfClasses; i++)
-    {
+      {
       probabilityComposer->SetInput(
           i, CU::LoadImage< ProbabilityImageType >(argv[i + priorArgNumber]));
-    }
+      }
     priorImage = CU::GraftOutput< ProbabilityComposerType >(probabilityComposer,
                                                             0);
-  }
+    }
 
   PixelType minValue;
   PixelType maxValue;
-  double quantile = 0.01;
+  double quantile = 0.0001;
   CU::ImageExtent< ImageType >(image, minValue, maxValue, quantile);
 
   std::cerr << "(" << minValue << ", " << maxValue << ")" << std::endl;
@@ -111,7 +112,7 @@ int main(int argc, char *argv[])
 
   HistogramType::Pointer hist = HistogramType::New();
 
-  {
+    {
     hist->Graft(originalHist);
 
     const double totalFrequency =
@@ -120,32 +121,32 @@ int main(int argc, char *argv[])
     typedef std::vector< double > HistType;
     HistType histVector(sampleSize);
     for (size_t i = 0; i < sampleSize; i++)
-    {
+      {
       histVector[i] = hist->GetFrequency(i);
-    }
+      }
     for (size_t i = histogramSmoothing; i < sampleSize - histogramSmoothing;
         i++)
-    {
+      {
       std::vector< double > freqs;
       for (int j = -histogramSmoothing; j <= histogramSmoothing; j++)
-      {
+        {
         freqs.push_back(histVector[i + j]);
-      }
+        }
       std::sort(freqs.begin(), freqs.end());
       hist->SetFrequency(i, *(freqs.begin() + histogramSmoothing));
-    }
+      }
     const double scaleUp = totalFrequency / hist->GetTotalFrequency();
     for (size_t i = histogramSmoothing; i < sampleSize - histogramSmoothing;
         i++)
-    {
+      {
       hist->SetFrequency(i, hist->GetFrequency(i) * scaleUp);
+      }
     }
-  }
 
   LCMEstimator::Pointer estimator = LCMEstimator::New();
   estimator->SetSample(hist);
   estimator->SetNumberOfClasses(numberOfClasses);
-  estimator->DebugOn();
+  estimator->DebugOff();
   estimator->Update();
 
   typedef itk::MembershipImageFilter< ImageType,
@@ -159,9 +160,9 @@ int main(int argc, char *argv[])
 
   membershipFilter->SetInput(image);
   for (size_t j = 0; j < numberOfClasses; j++)
-  {
+    {
     membershipFilter->AddMembershipFunction(estimator->GetNthComponent(j));
-  }
+    }
 
   MAPMarkovFilter->SetPriorVectorImage(priorImage);
   MAPMarkovFilter->SetPriorBias(0.1);
