@@ -18,15 +18,16 @@ KolmogorovSmirnovTest< TMeasurement >::KolmogorovSmirnovTest()
 }
 
 template< typename TMeasurement >
-double KolmogorovSmirnovTest< TMeasurement >::Evaluate(
+double
+KolmogorovSmirnovTest< TMeasurement >::Evaluate(
     const PairDistribution & s) const
 {
   DistributionType D1(s.first);
   DistributionType D2(s.second);
   if (!this->GetSortedReference())
-  {
+    {
     std::sort(D1.begin(), D1.end());
-  }
+    }
   std::sort(D2.begin(), D2.end());
   double cdf1 = 0;
   double cdf2 = 0;
@@ -44,43 +45,52 @@ double KolmogorovSmirnovTest< TMeasurement >::Evaluate(
 
   double dp = 0;
   double dn = 0;
+
+  double mean_cdf=0;
+
   while (it2 != it2End)
-  {
-    while (it1 != it1End)
     {
-      if (*it1 >= *it2)
+    while (it1 != it1End)
       {
+      if (*it1 >= *it2)
+        {
         break;
-      }
+        }
       cdf1 += step1;
       dp = vcl_max(dp, cdf1 - cdf2);
       dn = vcl_max(dn, cdf2 - cdf1);
       x = *it1;
       it1++;
-    }
+      }
     x = *it2;
     cdf2 += step2;
+    mean_cdf += cdf1;
     dp = vcl_max(dp, cdf1 - cdf2);
     dn = vcl_max(dn, cdf2 - cdf1);
     it2++;
-  }
+    }
+  mean_cdf *= step2;
+
   if (this->GetPositive())
-  {
-    return dp>dn?dp:0;
-  }
+    {
+    return mean_cdf;//dp; //> dn ? dp : 0;
+    }
   else
-  {
-    return dn>dp?dn:0;
-  }
+    {
+    return 1-mean_cdf;//dn; //> dp ? dn : 0;
+    }
 }
 
 template< typename TMeasurement >
-void KolmogorovSmirnovTest< TMeasurement >::PrintSelf(std::ostream & os,
-                                                      Indent indent) const
+void
+KolmogorovSmirnovTest< TMeasurement >::PrintSelf(std::ostream & os,
+                                                 Indent indent) const
 {
   Superclass::PrintSelf(os, indent);
-  os << indent << "Right tail test: " << (m_Positive?"Yes":"No") << std::endl;
-  os << indent << "Reference samples are sorted: " << (m_SortedReference?"Yes":"No") << std::endl;
+  os << indent << "Right tail test: " << (m_Positive ? "Yes" : "No")
+     << std::endl;
+  os << indent << "Reference samples are sorted: "
+     << (m_SortedReference ? "Yes" : "No") << std::endl;
 }
 
 } // end of namespace Statistics

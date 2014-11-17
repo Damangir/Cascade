@@ -83,8 +83,12 @@ int main(int argc, char *argv[])
       ++imgIterator;
     }
   }
+  std::sort(refrence.begin(), refrence.end());
   std::cerr << "Done setting up reference CDF" << std::endl;
 
+  std::cerr << "["<< refrence.front() << ", " << refrence.back() << "]" << std::endl;
+
+  //return 0;
   KSFilter::Pointer ks = KSFilter::New();
   ks->SetRefrenceDistribution(refrence);
   ks->SetInput(image);

@@ -276,7 +276,7 @@ if options.freesurfer:
     
     def fsImport():
         inImages = [
-                    cascadeManager.imageInSpace('T1.nii.gz', 'T1'),
+                    os.path.join(options.freesurfer, 'mri', 'rawavg.mgz'),
                     os.path.join(options.freesurfer, 'mri', 'aseg.mgz'),
                     os.path.join(options.freesurfer, 'mri', 'wmparc.mgz'),
                    ]
@@ -533,9 +533,8 @@ def modelFreeParam():
                     cascadeManager.imageInSpace('possible.wml.nii.gz', cascadeManager.calcSpace)
                     ]
     
-        outImages = [
-                    cascadeManager.imageInSpace(img+'.model.free.nii.gz', cascadeManager.calcSpace),
-                    ]
+        outImages = cascadeManager.imageInSpace(img+'.model.free.nii.gz', cascadeManager.calcSpace)
+
        
         params = [
                   inImages,
@@ -553,13 +552,18 @@ def modelFreeSegmentation(input, output, extra):
     cascade.binary_proxy.fsl_run('fslmaths', [input[1], '-thr',3, '-bin', wm])
     cascade.binary_proxy.cascade_run('OneSampleKolmogorovSmirnovTest', [wm,wm, input[0], output[0], input[2], extra[1]] , output)
 
-
 ###############################################################################
 # This is model free segmentation. Fine results for volume estimation.
 ###############################################################################
 if options.simple:
+    @ruffus.merge(modelFreeSegmentation, cascadeManager.imageInSpace('model.free.wml.nii.gz', cascadeManager.calcSpace))
+    def summarize(infiles, summary_file):
+        print infiles
+        print summary_file
+
     if not options.target_tasks:
-        options.target_tasks = ['modelFreeSegmentation']
+        options.target_tasks = ['summarize']
+    
  
 ###############################################################################
 # This part onward is for normal run which contain modeling of normal brain
@@ -640,9 +644,8 @@ if testMode:
                       cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', cascadeManager.calcSpace),
                       options.radius, # Radius for histogram creation in mm
                       ]
-            outImages = [
-                    cascadeManager.imageInSpace(i[0]+'.KS.nii.gz', cascadeManager.calcSpace),
-                    ]
+            outImages = cascadeManager.imageInSpace(i[0]+'.KS.nii.gz', cascadeManager.calcSpace)
+            
             params = [
                   inImages,
                   outImages,
@@ -656,8 +659,14 @@ if testMode:
         wm = extra[0].getTempFilename('WM.nii.gz')
         cascade.binary_proxy.fsl_run('fslmaths', [input[2], '-thr',3, '-bin', wm])
         cascade.binary_proxy.cascade_run('TwoSampleKolmogorovSmirnovTest', [input[0],wm, input[1], output[0], input[3], extra[1]] , output)
+    
+    @ruffus.merge(KolmogorovSmirnov, cascadeManager.imageInSpace('pvalue.wml.nii.gz', cascadeManager.calcSpace))
+    def summarize(infiles, summary_file):
+        print infiles
+        print summary_file
 
-if has_atlas and not testMode:
+
+if has_atlas and not trainMode:
     options.target_tasks = ['report']
     def reportParam():
         if options.simple:
@@ -678,7 +687,7 @@ if has_atlas and not testMode:
                   outImages,
                   ]
         yield params
-    @ruffus.follows(modelFreeSegmentation)
+    @ruffus.follows(summarize)
     @ruffus.files(reportParam)    
     def report(input, output):
         reportTxt = "#"*80
