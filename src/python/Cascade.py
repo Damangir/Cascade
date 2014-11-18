@@ -550,7 +550,7 @@ def modelFreeParam():
 def modelFreeSegmentation(input, output, extra):
     wm = extra[0].getTempFilename('WM.nii.gz')
     cascade.binary_proxy.fsl_run('fslmaths', [input[1], '-thr',3, '-bin', wm])
-    cascade.binary_proxy.cascade_run('OneSampleKolmogorovSmirnovTest', [wm,wm, input[0], output[0], input[2], extra[1]] , output)
+    cascade.binary_proxy.cascade_run('OneSampleKolmogorovSmirnovTest', [wm,wm, input[0], output, input[2], extra[1]] , output)
 
 ###############################################################################
 # This is model free segmentation. Fine results for volume estimation.
