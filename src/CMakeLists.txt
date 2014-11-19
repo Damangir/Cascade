@@ -56,6 +56,9 @@ target_link_libraries(ReportMap ${ITK_LIBRARIES})
 add_executable(LabelImageOpening LabelImageOpening.cxx)
 target_link_libraries(LabelImageOpening ${ITK_LIBRARIES})
 
+add_executable(ImportImage ImportImage.cxx)
+target_link_libraries(ImportImage ${ITK_LIBRARIES})
+
 add_executable(DICOMReader DICOMReader.cxx)
 target_link_libraries(DICOMReader ${ITK_LIBRARIES})
 

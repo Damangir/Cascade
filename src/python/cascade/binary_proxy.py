@@ -77,6 +77,7 @@ cascadeCommands = ['linRegister',
                    'resample',
                    'resampleVector',
                    'ComposeToVector',
+                   'ImportImage',
                    
                    'inhomogeneity',
                    'brainExtraction',
