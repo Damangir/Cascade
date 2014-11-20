@@ -6,6 +6,10 @@
 #include "itkLabelMapToLabelImageFilter.h"
 #include "imageHelpers.h"
 
+#include "itkStatisticsLabelMapFilter.h"
+#include "itkLabelStatisticsImageFilter.h"
+#include <itkBinaryImageToStatisticsLabelMapFilter.h>
+
 namespace CU = cascade::util;
 
 int main(int argc, char *argv[])

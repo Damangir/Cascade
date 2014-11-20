@@ -1,79 +1,12 @@
 /* Copyright (C) 2013-2014 Soheil Damangir - All Rights Reserved */
-#include "itkImageFileReader.h"
-#include "itkImage.h"
-#include "itkGDCMImageIO.h"
-#include "itkGDCMSeriesFileNames.h"
-#include "itkImageSeriesReader.h"
-#include "itkImageFileWriter.h"
+
+#include "itkImageUtil.h"
+
+#include "itkGaussianDistribution.h"
 
 #include "itkOrientImageFilter.h"
 
 #include <map>
-
-template< typename TImage >
-typename TImage::Pointer
-ReadImage(std::string filename)
-{
-  typedef itk::ImageFileReader< TImage > ImageReaderType;
-
-  typename ImageReaderType::Pointer reader = ImageReaderType::New();
-  reader->SetFileName(filename);
-  typename TImage::Pointer image;
-  image = reader->GetOutput();
-  image->Update();
-  image->DisconnectPipeline();
-  return image;
-}
-
-template< typename TImage >
-std::vector< typename TImage::Pointer >
-ReadDICOMImage(std::string filename)
-{
-  std::vector< typename TImage::Pointer > images;
-
-  typedef itk::ImageSeriesReader< TImage > ReaderType;
-  typename ReaderType::Pointer reader = ReaderType::New();
-
-  typedef itk::GDCMImageIO ImageIOType;
-  ImageIOType::Pointer dicomIO = ImageIOType::New();
-  reader->SetImageIO(dicomIO);
-
-  typedef itk::GDCMSeriesFileNames NamesGeneratorType;
-  NamesGeneratorType::Pointer nameGenerator = NamesGeneratorType::New();
-  nameGenerator->SetUseSeriesDetails(true);
-  nameGenerator->AddSeriesRestriction("0008|0021");
-  nameGenerator->SetDirectory(filename);
-
-  typedef std::vector< std::string > SeriesIdContainer;
-  typedef std::vector< std::string > SeriesIdContainer;
-  const SeriesIdContainer & seriesUID = nameGenerator->GetSeriesUIDs();
-  SeriesIdContainer::const_iterator seriesItr = seriesUID.begin();
-  SeriesIdContainer::const_iterator seriesEnd = seriesUID.end();
-  while (seriesItr != seriesEnd)
-    {
-    std::string seriesIdentifier = *seriesItr;
-    std::cout << "Reading " << seriesIdentifier << std::endl;
-    reader->SetFileNames(nameGenerator->GetFileNames(seriesIdentifier));
-    typename TImage::Pointer image;
-    image = reader->GetOutput();
-    image->Update();
-    image->DisconnectPipeline();
-    images.push_back(image);
-    ++seriesItr;
-    }
-  return images;
-}
-
-template< class ImageT >
-void
-WriteImage(std::string filename, const ImageT* image)
-{
-  typedef itk::ImageFileWriter< ImageT > ImageWriterType;
-  typename ImageWriterType::Pointer writer = ImageWriterType::New();
-  writer->SetFileName(filename);
-  writer->SetInput(image);
-  writer->Update();
-}
 
 int
 main(int argc, char *argv[])
@@ -148,32 +81,33 @@ main(int argc, char *argv[])
       std::cout << it->first;
       if (it->first.length() == 3)
         {
-        std::cout << " :" ;
+        std::cout << " :";
         for (unsigned int i = 0; i < 3; i++)
           {
-            char key = it->first.at(i);
-            switch (key) {
-              case 'R':
-                std::cout << " Right-To-Left";
-                break;
-              case 'L':
-                std::cout << " Left-To-Right";
-                break;
-              case 'I':
-                std::cout << " Inferior-To-Superior";
-                break;
-              case 'S':
-                std::cout << " Superior-To-Inferior";
-                break;
-              case 'A':
-                std::cout << " Anterior-To-Posterior";
-                break;
-              case 'P':
-                std::cout << " Posterior-To-Anterior";
-                break;
-              default:
-                break;
-            }
+          char key = it->first.at(i);
+          switch (key)
+          {
+            case 'R':
+              std::cout << " Right-To-Left";
+              break;
+            case 'L':
+              std::cout << " Left-To-Right";
+              break;
+            case 'I':
+              std::cout << " Inferior-To-Superior";
+              break;
+            case 'S':
+              std::cout << " Superior-To-Inferior";
+              break;
+            case 'A':
+              std::cout << " Anterior-To-Posterior";
+              break;
+            case 'P':
+              std::cout << " Posterior-To-Anterior";
+              break;
+            default:
+              break;
+          }
           }
         }
       std::cout << std::endl;
@@ -202,26 +136,16 @@ main(int argc, char *argv[])
   const unsigned int ImageDimension = 3;
 
   typedef itk::Image< PixelType, ImageDimension > ImageT;
-  typename ImageT::Pointer image;
+  typedef itk::ImageUtil< ImageT > ImageUtilT;
+  ImageT::Pointer image;
   try
     {
-    image = ReadImage< ImageT >(input);
-    std::cerr << "Input is " << ImageDimension << "D image" << std::endl;
+    image = ImageUtilT::ReadImage(input);
     }
   catch (itk::ExceptionObject &ex)
     {
-    try
-      {
-      image = ReadDICOMImage< ImageT >(input)[0];
-      std::cerr << "Input is " << ImageDimension << "D DICOM series"
-                << std::endl;
-      }
-    catch (itk::ExceptionObject &ex)
-      {
-      std::cerr << "Can not read " << input
-                << ". Only 3D images and DIOM series can be read." << std::endl;
-      return EXIT_FAILURE;
-      }
+    std::cerr << ex.GetDescription() << std::endl;
+    return EXIT_FAILURE;
     }
 
   typedef itk::OrientImageFilter< ImageT, ImageT > OrientFilterType;
@@ -236,14 +160,17 @@ main(int argc, char *argv[])
     std::cerr << "No target orientation provided. The image will be saved with"
               " original orientation"
               << std::endl;
-    WriteImage< ImageT >(output, image);
+
+    ImageUtilT::WriteImage(output, image);
+
     return EXIT_SUCCESS;
     }
 
   orient->UseImageDirectionOn();
   orient->SetInput(image);
   orient->Update();
-  WriteImage< ImageT >(output, orient->GetOutput());
+
+  ImageUtilT::WriteImage(output, orient->GetOutput());
 
   return EXIT_SUCCESS;
 }

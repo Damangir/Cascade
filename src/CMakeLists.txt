@@ -45,6 +45,10 @@ target_link_libraries(separateWG ${ITK_LIBRARIES})
 add_executable(refineBTS refineBTS.cxx)
 target_link_libraries(refineBTS ${ITK_LIBRARIES})
 
+add_executable(CorrectGrayMatterFalsePositive CorrectGrayMatterFalsePositive.cxx)
+target_link_libraries(CorrectGrayMatterFalsePositive ${ITK_LIBRARIES})
+
+
 # Reporting
 add_executable(atlas atlas.cxx)
 target_link_libraries(atlas ${ITK_LIBRARIES})
