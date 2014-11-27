@@ -168,11 +168,7 @@ def originalImagesParam():
 #@ruffus.graphviz(label='Original Images')
 @ruffus.files(originalImagesParam)
 def originalImages(input, output):
-    if input.endswith('.mgz'):
-        cascade.binary_proxy.run('mri_vol2vol', ['--mov', input, '--targ', input, '--regheader',  '--o', output, '--no-save-reg'], output)      
-        cascade.binary_proxy.cascade_run('ImportImage', [output, output, 'MNI'])
-    else:
-        cascade.binary_proxy.cascade_run('ImportImage', [input, output, 'MNI'])
+    cascade.binary_proxy.cascade_run('ImportImage', [input, output, 'MNI'])
 
 ###############################################################################
 # Bring the base image into the pipeline
@@ -203,11 +199,13 @@ def interaRegistration(input, output, manager):
     if options.already_registered:
         shutil.copy(cascade.config.Unity_Transform, transferFile)
         shutil.copy(cascade.config.Unity_Transform, invTransferFile)
-    else:
-        cascade.binary_proxy.cascade_run('linRegister', [fixedImage, movingImage, transferFile, invTransferFile, 'intra'])
-        
+        return
+    
     if movedImage != movingImage:
+        cascade.binary_proxy.cascade_run('linRegister', [fixedImage, movingImage, transferFile, invTransferFile])        
         cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile])
+    else:
+        shutil.copy(cascade.config.Unity_Transform, transferFile)
 
 ###############################################################################
 # Linear registration to STD space
@@ -274,21 +272,18 @@ if options.freesurfer:
     do_BTS = False
     do_BrainExtract = False
     do_WMEstimate = False
-    has_atlas = True
+    has_atlas = False
     
     def fsImport():
         inImages = [
                     cascadeManager.imageInSpace('T1.nii.gz', 'T1'),
                     os.path.join(options.freesurfer, 'mri', 'aseg.mgz'),
-                    os.path.join(options.freesurfer, 'mri', 'wmparc.mgz'),
                    ]
         param = [cascadeManager,]
         outImages = [
                     cascadeManager.imageInSpace('aseg.nii.gz', 'T1'),
                     cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', 'T1'),
                     cascadeManager.imageInSpace('brainTissueSegmentation.nii.gz', cascadeManager.calcSpace),
-                    cascadeManager.imageInSpace('wmparc.nii.gz', 'T1'),
-                    cascadeManager.imageInSpace('atlas.nii.gz', cascadeManager.calcSpace),
                     ]
        
         params = [
@@ -301,8 +296,10 @@ if options.freesurfer:
     @ruffus.follows(interaRegistration)
     def ImportFS(input, output, param):
         #Import aseg as brainTissueSegmentation
-        cascade.binary_proxy.run('mri_label2vol', ['--seg', input[1], '--temp', input[0], '--o',  output[0], '--regheader', input[1]], output[0])
+        #cascade.binary_proxy.run('mri_label2vol', ['--seg', input[1], '--temp', input[0], '--o',  output[0], '--regheader', input[1]], output[0])
         #cascade.binary_proxy.run('mri_convert', ['-rt', param[1], '-rl', input[0], input[1], output[0]], output[0])
+        cascade.binary_proxy.cascade_run('ImportImage', [input[1],  output[0], 'MNI'], output[0])
+        cascade.binary_proxy.cascade_run('resample', [input[0],  output[0], output[0], cascade.config.Unity_Transform, 'nn'], output[0])
         cascade.binary_proxy.cascade_run('relabel', [output[0], cascade.config.FreeSurfer_To_BrainTissueSegmentation, output[1]], output[1])
         manager = param[0]
         movingImage = output[1]
@@ -310,16 +307,10 @@ if options.freesurfer:
         fixedImage = manager.imageInSpace(manager.calcSpace + '.nii.gz', manager.calcSpace)
         transferFile = manager.transITKName(manager.getImageSpace(movingImage), manager.getImageSpace(fixedImage))
         cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile, 'nn'], movedImage)
-        
-        #Import wmparc as atlas
-        cascade.binary_proxy.run('mri_label2vol', ['--seg', input[2], '--temp', input[0], '--o',  output[3], '--regheader', input[2]], output[3])
-        #cascade.binary_proxy.run('mri_convert', [input[2], output[3]], output[3])
-        movingImage = output[3]
-        movedImage = output[4]
-        fixedImage = manager.imageInSpace(manager.calcSpace + '.nii.gz', manager.calcSpace)
-        transferFile = manager.transITKName(manager.getImageSpace(movingImage), manager.getImageSpace(fixedImage))
-        cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile, 'nn'], movedImage)
+        cascade.binary_proxy.cascade_run('CorrectGrayMatterFalsePositive', [manager.imageInSpace('FLAIR.norm.nii.gz', cascadeManager.calcSpace),
+                                                                            movedImage, movedImage , 0.9, 0.4], movedImage)
 
+        
     @ruffus.transform(ImportFS, ruffus.formatter(),
                       cascadeManager.imageInSpace('brain_mask.nii.gz', cascadeManager.calcSpace),
                       cascadeManager)

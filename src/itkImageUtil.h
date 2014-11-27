@@ -45,6 +45,9 @@ public:
   static ImagePointer
   Read3DImage(std::string filename);
 
+  static ImagePointer
+  ReadMGHImage(std::string filename);
+
   static std::vector< ImagePointer >
   ReadDICOMImage(std::string filename);
 

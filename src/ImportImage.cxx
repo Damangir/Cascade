@@ -68,7 +68,7 @@ main(int argc, char *argv[])
   orientMap["MNI"] = itk::SpatialOrientation::ITK_COORDINATE_ORIENTATION_RPI;
   orientMap["RADIO"] = itk::SpatialOrientation::ITK_COORDINATE_ORIENTATION_LAS;
 
-  if (std::string(argv[1]) == "-h")
+  if (argc > 1 && std::string(argv[1]) == "-h")
     {
     std::cout << "Usage: " << argv[0];
     std::cout << " input output Orientation";
@@ -149,7 +149,7 @@ main(int argc, char *argv[])
     }
 
   typedef itk::OrientImageFilter< ImageT, ImageT > OrientFilterType;
-  typename OrientFilterType::Pointer orient = OrientFilterType::New();
+  OrientFilterType::Pointer orient = OrientFilterType::New();
 
   if (orientMap.find(orientation) != orientMap.end())
     {

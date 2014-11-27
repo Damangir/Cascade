@@ -84,9 +84,8 @@ cascadeCommands = ['linRegister',
 
                    'relabel',
 
-                   'extractCSF',
-                   'separateWG',
                    'refineBTS',
+                   'CorrectGrayMatterFalsePositive',
                    'TissueTypeSegmentation',
                    
                    'EvidentNormal',

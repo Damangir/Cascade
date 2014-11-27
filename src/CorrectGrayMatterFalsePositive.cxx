@@ -190,7 +190,7 @@ main(int argc, char *argv[])
   std::cerr << "All gray matter blobs that " << beta * 100 << "% ";
   std::cerr << "of its border is white matter will convert to gray matter.";
   std::cerr << std::endl;
-  typename StatisticsLabelObjectType::HistogramType::MeasurementVectorType mv(
+  StatisticsLabelObjectType::HistogramType::MeasurementVectorType mv(
       1);
   for (size_t i = 1; i < statContourLabelMap->GetNumberOfLabelObjects(); i++)
     {

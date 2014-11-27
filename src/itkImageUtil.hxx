@@ -14,39 +14,56 @@ namespace itk
 {
 
 template< typename TImage >
-typename ImageUtil< TImage >::ImagePointer
-ImageUtil< TImage >::ReadImage(std::string filename)
+typename ImageUtil< TImage >::ImagePointer ImageUtil< TImage >::ReadImage(
+    std::string filename)
 {
   ImagePointer image;
   try
-    {
+  {
     image = Read3DImage(filename);
     //itkDebugMacro(<<"Input is " << ImageType::ImageDimension << "D image");
-    }
+  }
   catch (itk::ExceptionObject &ex)
-    {
+  {
     try
-      {
+    {
       image = ReadDICOMImage(filename)[0];
       //itkDebugMacro(<< "Input is " << ImageType::ImageDimension << "D DICOM series");
-      }
+    }
     catch (itk::ExceptionObject &ex)
-      {
+    {
       std::ostringstream message;
       message << "itk::ERROR: ImageUtil : " << "Can not read " << filename
               << ". Only 3D images and DIOM series can be read.";
       ::itk::ExceptionObject e_(__FILE__, __LINE__, message.str().c_str(),
       ITK_LOCATION);
       throw e_;
-      }
     }
+  }
 
   return image;
 }
 
 template< typename TImage >
-typename ImageUtil< TImage >::ImagePointer
-ImageUtil< TImage >::Read3DImage(std::string filename)
+typename ImageUtil< TImage >::ImagePointer ImageUtil< TImage >::ReadMGHImage(
+    std::string filename)
+{
+  typedef GDCMImageIO ImageIOType;
+  ImageIOType::Pointer dicomIO = ImageIOType::New();
+  typedef ImageFileReader< ImageType > ImageReaderType;
+  typename ImageReaderType::Pointer reader = ImageReaderType::New();
+  reader->SetFileName(filename);
+  ImagePointer image;
+  image = reader->GetOutput();
+  image->Update();
+  image->DisconnectPipeline();
+  return image;
+
+}
+
+template< typename TImage >
+typename ImageUtil< TImage >::ImagePointer ImageUtil< TImage >::Read3DImage(
+    std::string filename)
 {
   typedef ImageFileReader< ImageType > ImageReaderType;
   typename ImageReaderType::Pointer reader = ImageReaderType::New();
@@ -59,8 +76,8 @@ ImageUtil< TImage >::Read3DImage(std::string filename)
 }
 
 template< typename TImage >
-std::vector< typename ImageUtil< TImage >::ImagePointer >
-ImageUtil< TImage >::ReadDICOMImage(std::string filename)
+std::vector< typename ImageUtil< TImage >::ImagePointer > ImageUtil< TImage >::ReadDICOMImage(
+    std::string filename)
 {
   std::vector< ImagePointer > images;
 
@@ -83,7 +100,7 @@ ImageUtil< TImage >::ReadDICOMImage(std::string filename)
   SeriesIdContainer::const_iterator seriesItr = seriesUID.begin();
   SeriesIdContainer::const_iterator seriesEnd = seriesUID.end();
   while (seriesItr != seriesEnd)
-    {
+  {
     std::string seriesIdentifier = *seriesItr;
     //itkDebugMacro(<< "Reading " << seriesIdentifier);
     reader->SetFileNames(nameGenerator->GetFileNames(seriesIdentifier));
@@ -93,13 +110,12 @@ ImageUtil< TImage >::ReadDICOMImage(std::string filename)
     image->DisconnectPipeline();
     images.push_back(image);
     ++seriesItr;
-    }
+  }
   return images;
 }
 
 template< typename TImage >
-void
-ImageUtil< TImage >::WriteImage(std::string filename, const TImage* image)
+void ImageUtil< TImage >::WriteImage(std::string filename, const TImage* image)
 {
   typedef ImageFileWriter< TImage > ImageWriterType;
   typename ImageWriterType::Pointer writer = ImageWriterType::New();
@@ -109,26 +125,25 @@ ImageUtil< TImage >::WriteImage(std::string filename, const TImage* image)
 }
 
 template< typename TImage >
-typename ImageUtil< TImage >::SizeType
-ImageUtil< TImage >::GetRadiusFromPhysicalSize(const TImage* img, float r)
+typename ImageUtil< TImage >::SizeType ImageUtil< TImage >::GetRadiusFromPhysicalSize(
+    const TImage* img, float r)
 {
   SizeType radius;
   for (unsigned int i = 0; i < ImageDimension; i++)
-    {
+  {
     radius[i] = r / img->GetSpacing()[i];
-    }
+  }
   return radius;
 }
 
 template< typename TImage >
-unsigned int
-ImageUtil< TImage >::GetNumberOfPixels(const SizeType& sz)
+unsigned int ImageUtil< TImage >::GetNumberOfPixels(const SizeType& sz)
 {
   unsigned int total = 1;
   for (unsigned int i = 0; i < ImageDimension; i++)
-    {
+  {
     total *= sz[i] * 2 + 1;
-    }
+  }
   return total;
 }
 
