@@ -2,6 +2,7 @@
 
 #include "itkImageRegionConstIterator.h"
 #include "imageHelpers.h"
+
 #include "map"
 
 namespace CU = cascade::util;
