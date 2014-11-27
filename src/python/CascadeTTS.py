@@ -175,7 +175,7 @@ def brainTissueSegmentation(input, output, inputType):
         return 0
 
     cascade.binary_proxy.cascade_run('refineBTS', [input[0], input[1] , output, input[2], input[3]], output)
-    cascade.binary_proxy.cascade_run('CorrectGrayMatterFalsePositive', [input[0], input[1] , output , 0.9, 0.4], movedImage)
+    cascade.binary_proxy.cascade_run('CorrectGrayMatterFalsePositive', [input[0], input[1] , output , 0.9, 0.4], output)
 
 
  
