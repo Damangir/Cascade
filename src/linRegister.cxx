@@ -48,6 +48,9 @@ int main(int argc, char *argv[])
 
     affineCalculator->SetFixedImage(fixedImageReader->GetOutput());
     affineCalculator->SetMovingImage(movingImageReader->GetOutput());
+    /*
+     * TODO: Make intra registration robust on partial brain.
+     */
     if (mode == "intra")
     {
       affineCalculator->IntraRegistrationOn();
