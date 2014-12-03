@@ -1,11 +1,8 @@
 /* Copyright (C) 2013-2014 Soheil Damangir - All Rights Reserved */
-#include "imageHelpers.h"
 #include "itkImageRegionConstIterator.h"
 #include "itkImageRegionIterator.h"
 
-#include "vector"
-
-namespace CU = cascade::util;
+#include "itkImageUtil.h"
 
 int main(int argc, char *argv[])
 {
@@ -31,7 +28,10 @@ int main(int argc, char *argv[])
   typedef itk::ImageRegionConstIterator< VectorImageType > VectorImageIterator;
   typedef itk::ImageRegionIterator< ImageType > ImageIterator;
 
-  VectorImageType::Pointer modelVectorImage = CU::LoadImage< VectorImageType >(
+  typedef itk::ImageUtil<VectorImageType> VectorImageUtil;
+  typedef itk::ImageUtil<ImageType> ImageUtil;
+
+  VectorImageType::Pointer modelVectorImage = VectorImageUtil::ReadImage(
       modelVec);
 
   ImageType::Pointer modelScalarImage = ImageType::New();
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     ++smIt;
   }
 
-  CU::WriteImage<ImageType>(ModelScl, modelScalarImage);
+  ImageUtil::WriteImage(ModelScl, modelScalarImage);
   return EXIT_SUCCESS;
 }
 

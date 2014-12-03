@@ -1,9 +1,6 @@
 /* Copyright (C) 2013-2014 Soheil Damangir - All Rights Reserved */
 #include "itkComposeImageFilter.h"
-
-#include "imageHelpers.h"
-
-namespace CU = cascade::util;
+#include "itkImageUtil.h"
 
 int main(int argc, char *argv[])
 {
@@ -29,19 +26,21 @@ int main(int argc, char *argv[])
   typedef itk::Image< PixelType, ImageDimension > ImageType;
   typedef itk::VectorImage< PixelType, ImageDimension > VectorImageType;
 
+  typedef itk::ImageUtil< ImageType > ImageUtil;
+  typedef itk::ImageUtil< VectorImageType > VectorImageUtil;
+
   VectorImageType::Pointer image;
   {
     typedef itk::ComposeImageFilter< ImageType, VectorImageType > ComposerType;
     ComposerType::Pointer composer = ComposerType::New();
     for (size_t i = 0; i < numberOfInputs; i++)
     {
-      composer->SetInput(i,
-                         CU::LoadImage< ImageType >(argv[i + priorArgNumber]));
+      composer->SetInput(i, ImageUtil::ReadImage(argv[i + priorArgNumber]));
     }
-    image = CU::GraftOutput< ComposerType >(composer, 0);
+    image = VectorImageUtil::GraftOutput(composer, 0);
   }
 
-  CU::WriteImage< VectorImageType >(output, image);
+  VectorImageUtil::WriteImage(output, image);
   return EXIT_SUCCESS;
 }
 

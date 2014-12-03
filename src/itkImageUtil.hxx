@@ -10,6 +10,12 @@
 #include "itkImageSeriesReader.h"
 #include "itkImageFileWriter.h"
 
+#include "itkBinaryBallStructuringElement.h"
+#include "itkBinaryErodeImageFilter.h"
+#include "itkBinaryDilateImageFilter.h"
+#include "itkBinaryMorphologicalClosingImageFilter.h"
+#include "itkBinaryMorphologicalOpeningImageFilter.h"
+
 namespace itk
 {
 
@@ -34,9 +40,9 @@ typename ImageUtil< TImage >::ImagePointer ImageUtil< TImage >::ReadImage(
     {
       std::ostringstream message;
       message << "itk::ERROR: ImageUtil : " << "Can not read " << filename
-              << ". Only 3D images and DIOM series can be read.";
+          << ". Only 3D images and DIOM series can be read.";
       ::itk::ExceptionObject e_(__FILE__, __LINE__, message.str().c_str(),
-      ITK_LOCATION);
+                                ITK_LOCATION);
       throw e_;
     }
   }
@@ -137,6 +143,17 @@ typename ImageUtil< TImage >::SizeType ImageUtil< TImage >::GetRadiusFromPhysica
 }
 
 template< typename TImage >
+float ImageUtil< TImage >::GetPhysicalPixelSize(const TImage* img)
+{
+  float s = 1;
+  for (unsigned int i = 0; i < ImageDimension; i++)
+  {
+    s *= img->GetSpacing()[i];
+  }
+  return s;
+}
+
+template< typename TImage >
 unsigned int ImageUtil< TImage >::GetNumberOfPixels(const SizeType& sz)
 {
   unsigned int total = 1;
@@ -145,6 +162,88 @@ unsigned int ImageUtil< TImage >::GetNumberOfPixels(const SizeType& sz)
     total *= sz[i] * 2 + 1;
   }
   return total;
+}
+
+template< typename TImage >
+typename ImageUtil< TImage >::ImagePointer ImageUtil< TImage >::GraftOutput(
+    ImageSource< ImageType >* imgSource, size_t index)
+{
+  ImagePointer image = imgSource->GetOutput(index);
+  image->Update();
+  image->DisconnectPipeline();
+  return image;
+}
+
+template< typename TImage >
+typename ImageUtil< TImage >::ImagePointer ImageUtil< TImage >::Erode(
+    const ImageType* img, float r, float foreground)
+{
+  typedef BinaryBallStructuringElement< PixelType, ImageDimension > Structure;
+  typedef BinaryErodeImageFilter< ImageType, ImageType, Structure > MorphFilter;
+  Structure structure;
+  structure.SetRadius(Self::GetRadiusFromPhysicalSize(img, r));
+  structure.CreateStructuringElement();
+  typename MorphFilter::Pointer morph = MorphFilter::New();
+  morph->SetInput(img);
+  morph->SetKernel(structure);
+  morph->SetForegroundValue(foreground);
+  morph->SetBackgroundValue(0);
+  ImagePointer output = Self::GraftOutput(morph, 0);
+  return output;
+}
+
+template< typename TImage >
+typename ImageUtil< TImage >::ImagePointer ImageUtil< TImage >::Dilate(
+    const ImageType* img, float r, float foreground)
+{
+  typedef BinaryBallStructuringElement< PixelType, ImageDimension > Structure;
+  typedef BinaryDilateImageFilter< ImageType, ImageType, Structure > MorphFilter;
+  Structure structure;
+  structure.SetRadius(Self::GetRadiusFromPhysicalSize(img, r));
+  structure.CreateStructuringElement();
+  typename MorphFilter::Pointer morph = MorphFilter::New();
+  morph->SetInput(img);
+  morph->SetKernel(structure);
+  morph->SetForegroundValue(foreground);
+  morph->SetBackgroundValue(0);
+  ImagePointer output = Self::GraftOutput(morph, 0);
+  return output;
+}
+
+template< typename TImage >
+typename ImageUtil< TImage >::ImagePointer ImageUtil< TImage >::Opening(
+    const ImageType* img, float r, float foreground)
+{
+  typedef BinaryBallStructuringElement< PixelType, ImageDimension > Structure;
+  typedef BinaryMorphologicalOpeningImageFilter< ImageType, ImageType, Structure > MorphFilter;
+  Structure structure;
+  structure.SetRadius(Self::GetRadiusFromPhysicalSize(img, r));
+  structure.CreateStructuringElement();
+  typename MorphFilter::Pointer morph = MorphFilter::New();
+  morph->SetInput(img);
+  morph->SetKernel(structure);
+  morph->SetForegroundValue(foreground);
+  morph->SetBackgroundValue(0);
+  ImagePointer output = Self::GraftOutput(morph, 0);
+  return output;
+}
+
+template< typename TImage >
+typename ImageUtil< TImage >::ImagePointer ImageUtil< TImage >::Closing(
+    const ImageType* img, float r, float foreground)
+{
+  typedef BinaryBallStructuringElement< PixelType, ImageDimension > Structure;
+  typedef BinaryMorphologicalClosingImageFilter< ImageType, ImageType, Structure > MorphFilter;
+  Structure structure;
+  structure.SetRadius(Self::GetRadiusFromPhysicalSize(img, r));
+  structure.CreateStructuringElement();
+  typename MorphFilter::Pointer morph = MorphFilter::New();
+  morph->SetInput(img);
+  morph->SetKernel(structure);
+  morph->SetForegroundValue(foreground);
+  morph->SetBackgroundValue(0);
+  ImagePointer output = Self::GraftOutput(morph, 0);
+  return output;
 }
 
 } // end namespace itk

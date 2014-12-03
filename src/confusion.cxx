@@ -1,10 +1,7 @@
 /* Copyright (C) 2013-2014 Soheil Damangir - All Rights Reserved */
 
 #include "itkImageRegionConstIterator.h"
-
-#include "imageHelpers.h"
-
-namespace CU = cascade::util;
+#include "itkImageUtil.h"
 
 int main(int argc, char *argv[])
 {
@@ -23,8 +20,10 @@ int main(int argc, char *argv[])
 
   typedef itk::Image< PixelType, ImageDimension > ImageType;
 
-  ImageType::Pointer image1 = CU::LoadImage< ImageType >(argv[1]);
-  ImageType::Pointer image2 = CU::LoadImage< ImageType >(argv[2]);
+  typedef itk::ImageUtil<ImageType> ImageUtil;
+
+  ImageType::Pointer image1 = ImageUtil::ReadImage(argv[1]);
+  ImageType::Pointer image2 = ImageUtil::ReadImage(argv[2]);
 
 
   ImageType::RegionType region = image1->GetLargestPossibleRegion();

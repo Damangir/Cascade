@@ -5,6 +5,7 @@
 
 #include "itkObject.h"
 #include "itkObjectFactory.h"
+#include "itkImageSource.h"
 
 #include <string>
 #include <vector>
@@ -24,6 +25,7 @@ public:
 
   typedef TImage ImageType;
   typedef typename ImageType::Pointer ImagePointer;
+  typedef typename ImageType::PixelType PixelType;
   typedef typename ImageType::IndexType IndexType;
   typedef typename ImageType::IndexValueType IndexValueType;
 
@@ -57,9 +59,28 @@ public:
   static SizeType
   GetRadiusFromPhysicalSize(const ImageType* img, float r);
 
+  static float
+  GetPhysicalPixelSize(const ImageType* img);
+
   static
   unsigned int
   GetNumberOfPixels(const SizeType& sz);
+
+  static ImagePointer
+  GraftOutput(ImageSource<ImageType>* imgSource, size_t index = 0);
+
+  static ImagePointer
+  Erode(const ImageType* img, float r, float foreground = 1);
+
+  static ImagePointer
+  Dilate(const ImageType* img, float r, float foreground = 1);
+
+  static ImagePointer
+  Opening(const ImageType* img, float r, float foreground = 1);
+
+  static ImagePointer
+  Closing(const ImageType* img, float r, float foreground = 1);
+
 protected:
   ImageUtil()
   {

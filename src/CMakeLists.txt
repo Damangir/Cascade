@@ -84,10 +84,6 @@ target_link_libraries(resample ${ITK_LIBRARIES})
 add_executable(resampleVector resampleVector.cxx)
 target_link_libraries(resampleVector ${ITK_LIBRARIES})
 
-# Future
-#add_executable(OneSampleRingKolmogorovSmirnovTest OneSampleRingKolmogorovSmirnovTest.cxx)
-#target_link_libraries(OneSampleRingKolmogorovSmirnovTest ${ITK_LIBRARIES})
-
 add_executable(CollapseModel CollapseModel.cxx)
 target_link_libraries(CollapseModel ${ITK_LIBRARIES})
 

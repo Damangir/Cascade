@@ -1,19 +1,19 @@
 /* Copyright (C) 2013-2014 Soheil Damangir - All Rights Reserved */
 
-#ifndef __itkAffineTransformCalculator_h
-#define __itkAffineTransformCalculator_h
+#ifndef __itkRigid3DTransformCalculator_h
+#define __itkRigid3DTransformCalculator_h
 
 #include "itkImageToImageFilter.h"
 #include "itkDataObjectDecorator.h"
 
-#include "itkAffineTransform.h"
+#include "itkVersorRigid3DTransform.h"
 #include "itkImageMaskSpatialObject.h"
 #include "itkBinaryThresholdImageFilter.h"
 
 #include "itkCenteredTransformInitializer.h"
 #include "itkMultiResolutionImageRegistrationMethod.h"
 #include "itkMattesMutualInformationImageToImageMetric.h"
-#include "itkRegularStepGradientDescentOptimizer.h"
+#include "itkVersorRigid3DTransformOptimizer.h"
 #include "itkRecursiveMultiResolutionPyramidImageFilter.h"
 #include "itkImage.h"
 #include "itkCastImageFilter.h"
@@ -23,15 +23,15 @@
 namespace itk
 {
 
-/** \class AffineTransformCalculator
- * \brief composite ITK filter for calculating affine transform
+/** \class Rigid3DTransformCalculator
+ * \brief composite ITK filter for calculating Rigid3D transform
  */
 template< class TFixedImageType, class TMovingImageType = TFixedImageType >
-class AffineTransformCalculator: public ProcessObject
+class Rigid3DTransformCalculator: public ProcessObject
 {
 public:
   // standard class typedefs
-  typedef AffineTransformCalculator Self;
+  typedef Rigid3DTransformCalculator Self;
   typedef ProcessObject Superclass;
   typedef SmartPointer< Self > Pointer;
   typedef SmartPointer< const Self > ConstPointer;
@@ -40,7 +40,7 @@ public:
   itkNewMacro (Self);
 
   // run-time type information (and related methods)
-  itkTypeMacro(AffineTransformCalculator, ProcessObject);
+  itkTypeMacro(Rigid3DTransformCalculator, ProcessObject);
 
   // image and label templates
   typedef TFixedImageType FixedImageType;
@@ -61,9 +61,9 @@ public:
 
   typedef ImageMaskSpatialObject< ImageDimension > MaskType;
 
-  typedef AffineTransform< double, ImageDimension > TransformType;
+  typedef VersorRigid3DTransform< double > TransformType;
 
-  typedef RegularStepGradientDescentOptimizer OptimizerType;
+  typedef VersorRigid3DTransformOptimizer OptimizerType;
   typedef LinearInterpolateImageFunction< InternalImageType, double > InterpolatorType;
   typedef MattesMutualInformationImageToImageMetric< InternalImageType,
       InternalImageType > MetricType;
@@ -87,19 +87,15 @@ public:
     this->ProcessObject::SetNthInput(1, const_cast< FixedImageType * >(image));
   }
 
-  virtual const TransformType * GetAffineTransform() const
+  virtual const TransformType * GetRigid3DTransform() const
   {
     return this->GetTransformationOutput()->Get();
   }
 
-  itkGetConstMacro(IntraRegistration, bool);
-  itkSetMacro(IntraRegistration, bool);
-  itkBooleanMacro (IntraRegistration);
-
 protected:
 
-  AffineTransformCalculator();
-  ~AffineTransformCalculator()
+  Rigid3DTransformCalculator();
+  ~Rigid3DTransformCalculator()
   {
   }
 
@@ -175,10 +171,10 @@ private:
     return static_cast< const FixedImageType* >(this->ProcessObject::GetInput(1));
   }
 
-  AffineTransformCalculator(const Self&); //purposely not implemented
+  Rigid3DTransformCalculator(const Self&); //purposely not implemented
   void operator=(const Self&); //purposely not implemented
 
-  typename TransformType::Pointer m_AffineTransform;
+  typename TransformType::Pointer m_Rigid3DTransform;
 
   FixedImagePointer m_FixedImage;
   MovingImagePointer m_MovingImage;
@@ -192,14 +188,13 @@ private:
   double m_RelaxationFactor;
 
   unsigned int m_NumberOfLevels;
-  bool m_IntraRegistration;
 };
 // end of class
 
 }// end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkAffineTransformCalculator.hxx"
+#include "itkRigid3DTransformCalculator.hxx"
 #endif
 
 #endif

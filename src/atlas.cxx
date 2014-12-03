@@ -1,11 +1,8 @@
 /* Copyright (C) 2013-2014 Soheil Damangir - All Rights Reserved */
 
 #include "itkImageRegionConstIterator.h"
-#include "imageHelpers.h"
-
+#include "itkImageUtil.h"
 #include "map"
-
-namespace CU = cascade::util;
 
 int main(int argc, char *argv[])
 {
@@ -43,8 +40,10 @@ int main(int argc, char *argv[])
   typedef itk::Image< PixelType, ImageDimension > ImageType;
   typedef itk::ImageRegionConstIterator< ImageType > ImageIteratorType;
 
-  ImageType::Pointer segImg = CU::LoadImage< ImageType >(segmentation);
-  ImageType::Pointer atlasImg = CU::LoadImage< ImageType >(atlas);
+  typedef itk::ImageUtil< ImageType > ImageUtil;
+
+  ImageType::Pointer segImg = ImageUtil::ReadImage(segmentation);
+  ImageType::Pointer atlasImg = ImageUtil::ReadImage(atlas);
 
   float voxelSize = 1;
   for(unsigned int i=0;i<ImageDimension;i++)

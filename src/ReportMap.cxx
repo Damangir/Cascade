@@ -1,20 +1,19 @@
 /* Copyright (C) 2013-2014 Soheil Damangir - All Rights Reserved */
 
+#include "itkImageUtil.h"
+
 #include "itkBinaryThresholdImageFilter.h"
 #include "itkBinaryImageToShapeLabelMapFilter.h"
 #include "itkShapeOpeningLabelMapFilter.h"
 #include "itkLabelMapToLabelImageFilter.h"
-#include "imageHelpers.h"
 
 #include "itkStatisticsLabelMapFilter.h"
 #include "itkLabelStatisticsImageFilter.h"
-#include <itkBinaryImageToStatisticsLabelMapFilter.h>
-
-namespace CU = cascade::util;
+#include "itkBinaryImageToStatisticsLabelMapFilter.h"
 
 int main(int argc, char *argv[])
 {
-  if (argc < 4)
+  if (argc < 2)
   {
     std::cerr << "Missing Parameters " << std::endl;
     std::cerr << "Usage: " << argv[0];
@@ -40,14 +39,14 @@ int main(int argc, char *argv[])
   const unsigned int SpaceDimension = ImageDimension;
 
   typedef itk::Image< PixelType, ImageDimension > ImageType;
+  typedef itk::Image< unsigned char, ImageDimension > LabelImageType;
 
-  ImageType::Pointer mapImg = CU::LoadImage< ImageType >(map);
+  typedef itk::ImageUtil< ImageType > ImageUtil;
+  typedef itk::ImageUtil< LabelImageType > LabelImageUtil;
 
-  float voxelSize = 1;
-  for (unsigned int i = 0; i < ImageDimension; i++)
-  {
-    voxelSize *= mapImg->GetSpacing()[i];
-  }
+  ImageType::Pointer mapImg = ImageUtil::ReadImage(map);
+
+  float voxelSize = ImageUtil::GetPhysicalPixelSize(mapImg);
 
   typedef itk::BinaryThresholdImageFilter< ImageType, ImageType > ThresholdType;
   ThresholdType::Pointer threshFilter = ThresholdType::New();
@@ -56,10 +55,11 @@ int main(int argc, char *argv[])
   threshFilter->SetOutsideValue(0);
   threshFilter->SetInsideValue(1);
 
-  ImageType::Pointer openedMap = CU::Opening< ImageType >(
-      threshFilter->GetOutput(), bridgeRad, 1);
-
-  typedef itk::Image< unsigned char, ImageDimension > LabelImageType;
+  ImageType::Pointer openedMap = ImageUtil::GraftOutput(threshFilter, 0);
+  if (bridgeRad > 0)
+  {
+    openedMap = ImageUtil::Opening(openedMap, bridgeRad, 1);
+  }
 
   // Create a ShapeLabelMap from the image
   typedef itk::BinaryImageToShapeLabelMapFilter< ImageType > BinaryImageToShapeLabelMapFilterType;
@@ -102,13 +102,11 @@ int main(int argc, char *argv[])
         shapeOpeningLabelMapFilter->GetOutput());
     labelMapToLabelImageFilter->Update();
 
-    CU::WriteImage< LabelImageType >(seg,
-                                     labelMapToLabelImageFilter->GetOutput());
+    LabelImageUtil::WriteImage(seg, labelMapToLabelImageFilter->GetOutput());
   }
-  std::cout
-      << totalPhysicalSize << ","
-      << shapeOpeningLabelMapFilter->GetOutput()->GetNumberOfLabelObjects()
-      << std::endl;
+  std::cout << totalPhysicalSize << ","
+  << shapeOpeningLabelMapFilter->GetOutput()->GetNumberOfLabelObjects()
+  << std::endl;
 
   return EXIT_SUCCESS;
 }

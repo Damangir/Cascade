@@ -307,8 +307,9 @@ if options.freesurfer:
         fixedImage = manager.imageInSpace(manager.calcSpace + '.nii.gz', manager.calcSpace)
         transferFile = manager.transITKName(manager.getImageSpace(movingImage), manager.getImageSpace(fixedImage))
         cascade.binary_proxy.cascade_run('resample', [fixedImage, movingImage, movedImage, transferFile, 'nn'], movedImage)
-        cascade.binary_proxy.cascade_run('CorrectGrayMatterFalsePositive', [manager.imageInSpace('FLAIR.norm.nii.gz', cascadeManager.calcSpace),
-                                                                            movedImage, movedImage , 0.9, 0.4], movedImage)
+        FLR=manager.imageInSpace('FLAIR.nii.gz', cascadeManager.calcSpace)
+        if os.path.exists(FLR):
+            cascade.binary_proxy.cascade_run('CorrectGrayMatterFalsePositive', [FLR, movedImage, movedImage , 0.9, 0.4], movedImage)
 
         
     @ruffus.transform(ImportFS, ruffus.formatter(),

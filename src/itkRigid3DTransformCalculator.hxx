@@ -1,15 +1,15 @@
 /* Copyright (C) 2013-2014 Soheil Damangir - All Rights Reserved */
 
-#ifndef __itkAffineTransformCalculator_hxx
-#define __itkAffineTransformCalculator_hxx
+#ifndef __itkRigid3DTransformCalculator_hxx
+#define __itkRigid3DTransformCalculator_hxx
 
-#include "itkAffineTransformCalculator.h"
-#include "vnl/vnl_inverse.h"
+#include "itkRigid3DTransformCalculator.h"
+
 namespace itk
 {
 
 template< class TFixedImageType, class TMovingImageType >
-AffineTransformCalculator< TFixedImageType, TMovingImageType >::AffineTransformCalculator()
+Rigid3DTransformCalculator< TFixedImageType, TMovingImageType >::Rigid3DTransformCalculator()
 {
   // constructor
   m_FixedImage = 0;
@@ -19,36 +19,34 @@ AffineTransformCalculator< TFixedImageType, TMovingImageType >::AffineTransformC
   m_NumberOfBins = 50;
   m_NumberOfSamples = 5000;
 
-  m_AffineTransform = TransformType::New();
-  m_AffineTransform->SetIdentity();
+  m_Rigid3DTransform = TransformType::New();
+  m_Rigid3DTransform->SetIdentity();
 
   m_NumberOfIterations = 200;
   m_RelaxationFactor = 0.8;
   m_NumberOfLevels = 3;
-
-  m_IntraRegistration = false;
 
   this->SetNumberOfRequiredOutputs(1);
   this->ProcessObject::SetNthOutput(0, TransformObjectType::New().GetPointer());
 }
 
 template< class TFixedImageType, class TMovingImageType >
-const typename AffineTransformCalculator< TFixedImageType, TMovingImageType >::TransformObjectType*
-AffineTransformCalculator< TFixedImageType, TMovingImageType >::GetTransformationOutput() const
+const typename Rigid3DTransformCalculator< TFixedImageType, TMovingImageType >::TransformObjectType*
+Rigid3DTransformCalculator< TFixedImageType, TMovingImageType >::GetTransformationOutput() const
 {
   return static_cast< const TransformObjectType * >(this->ProcessObject::GetOutput(
       0));
 }
 
 template< class TFixedImageType, class TMovingImageType >
-typename AffineTransformCalculator< TFixedImageType, TMovingImageType >::TransformObjectType*
-AffineTransformCalculator< TFixedImageType, TMovingImageType >::GetTransformationOutput()
+typename Rigid3DTransformCalculator< TFixedImageType, TMovingImageType >::TransformObjectType*
+Rigid3DTransformCalculator< TFixedImageType, TMovingImageType >::GetTransformationOutput()
 {
   return static_cast< TransformObjectType * >(this->ProcessObject::GetOutput(0));
 }
 
 template< class TFixedImageType, class TMovingImageType >
-void AffineTransformCalculator< TFixedImageType, TMovingImageType >::GenerateData()
+void Rigid3DTransformCalculator< TFixedImageType, TMovingImageType >::GenerateData()
 {
 
   OptimizerType::Pointer optimizer = OptimizerType::New();
@@ -60,7 +58,7 @@ void AffineTransformCalculator< TFixedImageType, TMovingImageType >::GenerateDat
   registration->SetInterpolator(interpolator);
   registration->SetMetric(metric);
 
-  registration->SetTransform(m_AffineTransform);
+  registration->SetTransform(m_Rigid3DTransform);
 
   typedef CastImageFilter< FixedImageType, InternalImageType > FixedCastFilterType;
   typedef CastImageFilter< MovingImageType, InternalImageType > MovingCastFilterType;
@@ -96,37 +94,46 @@ void AffineTransformCalculator< TFixedImageType, TMovingImageType >::GenerateDat
       MovingImageType > TransformInitializerType;
   typename TransformInitializerType::Pointer initializer =
       TransformInitializerType::New();
-  initializer->SetTransform(m_AffineTransform);
+  initializer->SetTransform(m_Rigid3DTransform);
   initializer->SetFixedImage(this->GetFixedImage());
   initializer->SetMovingImage(this->GetMovingImage());
   initializer->MomentsOn();
   initializer->InitializeTransform();
+
+  typedef typename TransformType::VersorType VersorType;
+  typedef typename VersorType::VectorType VectorType;
+  VersorType rotation;
+  VectorType axis;
+  axis[0] = 0.0;
+  axis[1] = 0.0;
+  axis[2] = 1.0;
+  const double angle = 0;
+  rotation.Set(axis, angle);
+  m_Rigid3DTransform->SetRotation(rotation);
+
   registration->SetInitialTransformParameters(
-      m_AffineTransform->GetParameters());
+      m_Rigid3DTransform->GetParameters());
 
   OptimizerScalesType optimizerScales(
-      m_AffineTransform->GetNumberOfParameters());
+      m_Rigid3DTransform->GetNumberOfParameters());
 
-  for (unsigned int i = 0; i < ImageDimension * ImageDimension; i++)
+  for (unsigned int i = 0; i < ImageDimension; i++)
   {
     optimizerScales[i] = 1.0; // scale for matrix
   }
 
-  for (unsigned int i = ImageDimension * ImageDimension;
-      i < ImageDimension * (ImageDimension + 1); i++)
+  for (unsigned int i = ImageDimension; i < 2 * ImageDimension; i++)
   {
     optimizerScales[i] = m_TransitionRelativeScale; // scale for translation
   }
 
   optimizer->SetScales(optimizerScales);
+  optimizer->SetNumberOfIterations(m_NumberOfIterations);
+  optimizer->SetRelaxationFactor(m_RelaxationFactor);
 
   metric->SetNumberOfHistogramBins(m_NumberOfBins);
   metric->SetNumberOfSpatialSamples(m_NumberOfSamples);
-
   metric->ReinitializeSeed(76926294);
-
-  optimizer->SetNumberOfIterations(m_NumberOfIterations);
-  optimizer->SetRelaxationFactor(m_RelaxationFactor);
 
   typename RegistrationInterfaceCommand::Pointer command =
       RegistrationInterfaceCommand::New();
@@ -135,45 +142,13 @@ void AffineTransformCalculator< TFixedImageType, TMovingImageType >::GenerateDat
 
   registration->Update();
 
-  m_AffineTransform->SetParameters(registration->GetLastTransformParameters());
+  m_Rigid3DTransform->SetParameters(registration->GetLastTransformParameters());
 
-  /*
-   * Remove shearing and scaling.
-   */
-  if (m_IntraRegistration)
-  {
-    typedef vnl_matrix< double > VnlMatrixType;
-
-    VnlMatrixType M = m_AffineTransform->GetMatrix().GetVnlMatrix();
-
-    VnlMatrixType PQ = M;
-    VnlMatrixType NQ = M;
-    VnlMatrixType PQNQDiff;
-
-    const unsigned int maximumIterations = 100;
-
-    for (unsigned int ni = 0; ni < maximumIterations; ni++)
-    {
-      // Average current Qi with its inverse transpose
-      NQ = (PQ + vnl_inverse_transpose(PQ)) / 2.0;
-      PQNQDiff = NQ - PQ;
-      if (PQNQDiff.frobenius_norm() < 1e-7)
-      {
-        break;
-      }
-      else
-      {
-        PQ = NQ;
-      }
-    }
-    m_AffineTransform->SetMatrix(NQ);
-  }
-
-  this->GetTransformationOutput()->Set(m_AffineTransform);
+  this->GetTransformationOutput()->Set(m_Rigid3DTransform);
 }
 
 template< class TFixedImageType, class TMovingImageType >
-void AffineTransformCalculator< TFixedImageType, TMovingImageType >::PrintSelf(
+void Rigid3DTransformCalculator< TFixedImageType, TMovingImageType >::PrintSelf(
     std::ostream& os, Indent indent) const
 {
   Superclass::PrintSelf(os, indent);
