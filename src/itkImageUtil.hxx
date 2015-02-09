@@ -16,6 +16,8 @@
 #include "itkBinaryMorphologicalClosingImageFilter.h"
 #include "itkBinaryMorphologicalOpeningImageFilter.h"
 
+#include "itkImageToHistogramFilter.h"
+
 namespace itk
 {
 
@@ -244,6 +246,28 @@ typename ImageUtil< TImage >::ImagePointer ImageUtil< TImage >::Closing(
   morph->SetBackgroundValue(0);
   ImagePointer output = Self::GraftOutput(morph, 0);
   return output;
+}
+
+template< typename TImage >
+void ImageUtil< TImage >::ImageExtent(const ImageType* img, PixelType& minValue,
+                                      PixelType& maxValue, double quantile)
+{
+  typedef Statistics::ImageToHistogramFilter< ImageType > HistogramFilterType;
+  typename HistogramFilterType::Pointer histogramFilter =
+      HistogramFilterType::New();
+  typename HistogramFilterType::HistogramSizeType size(1);
+  size[0] = 255;        // number of bins for the Red   channel
+  histogramFilter->SetHistogramSize(size);
+  histogramFilter->SetMarginalScale(10.0);
+  histogramFilter->SetInput(img);
+  histogramFilter->Update();
+  typename HistogramFilterType::HistogramPointer hist =
+      histogramFilter->GetOutput();
+  hist->SetFrequency(0, 0);
+  const unsigned int histogramSize = hist->Size();
+
+  minValue = hist->Quantile(0, quantile);
+  maxValue = hist->Quantile(0, 1 - quantile);
 }
 
 } // end namespace itk

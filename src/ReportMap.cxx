@@ -1,112 +1,184 @@
 /* Copyright (C) 2013-2014 Soheil Damangir - All Rights Reserved */
-
 #include "itkImageUtil.h"
 
-#include "itkBinaryThresholdImageFilter.h"
-#include "itkBinaryImageToShapeLabelMapFilter.h"
-#include "itkShapeOpeningLabelMapFilter.h"
-#include "itkLabelMapToLabelImageFilter.h"
-
+#include "itkStatisticsLabelObject.h"
 #include "itkStatisticsLabelMapFilter.h"
-#include "itkLabelStatisticsImageFilter.h"
-#include "itkBinaryImageToStatisticsLabelMapFilter.h"
 
-int main(int argc, char *argv[])
+#include "itkBinaryImageToLabelMapFilter.h"
+#include "itkLabelImageToShapeLabelMapFilter.h"
+#include "itkLabelMapMaskImageFilter.h"
+#include "itkBinaryThresholdImageFilter.h"
+#include "itkConnectedComponentImageFilter.h"
+
+#include "itkLabelStatisticsOpeningImageFilter.h"
+#include "itkLabelMapToBinaryImageFilter.h"
+
+#include "itksys/CommandLineArguments.hxx"
+#include "itksys/SystemTools.hxx"
+
+int main(int argc, const char **argv)
 {
-  if (argc < 2)
+  std::string pathOut;
   {
-    std::cerr << "Missing Parameters " << std::endl;
-    std::cerr << "Usage: " << argv[0];
-    std::cerr << " map [threshold=0] [minsize=0] [bridgeradius=0] [binarySeg]";
-    std::cerr << std::endl;
+    std::string tmp;
+    itksys::SystemTools::FindProgramPath(argv[0], pathOut, tmp);
+    itksys::SystemTools::SplitProgramPath(pathOut.c_str(), tmp, pathOut);
+    std::cout << pathOut << std::endl;
     return EXIT_FAILURE;
   }
-
-  std::string map(argv[1]);
+  std::string map;
   std::string seg = "";
-  float thresh = 0;
-  float minSize = 0;
-  float bridgeRad = 0;
-  if (argc > 2) thresh = atof(argv[2]);
-  if (argc > 3) minSize = atof(argv[3]);
-  if (argc > 4) bridgeRad = atof(argv[4]);
-  if (argc > 5) seg = argv[5];
+  double thresh = 0;
+  double minSize = 0;
+  double bridgeRad = 0;
+  double maxThresh = 0;
+
+  typedef itksys::CommandLineArguments argT;
+  argT argParser;
+  argParser.Initialize(argc, argv);
+
+  argParser.AddArgument("--binary-seg", argT::SPACE_ARGUMENT, &seg,
+                        "Generate binary segmentation");
+  argParser.AddArgument("--threshold", argT::SPACE_ARGUMENT, &thresh,
+                        "Input map threshold");
+  argParser.AddArgument("--min-size", argT::SPACE_ARGUMENT, &minSize,
+                        "Minimum detection size in mm3");
+  argParser.AddArgument("--bridge-size", argT::SPACE_ARGUMENT, &bridgeRad,
+                        "Minimum bridging width for lesion counting in mm");
+  argParser.AddArgument("--max-threshold", argT::SPACE_ARGUMENT, &maxThresh,
+                        "Threshold for removing detection whose maximum"
+                        " is smaller than this value");
+  argParser.StoreUnusedArguments(true);
+
+  if (!argParser.Parse())
+  {
+    std::cerr << "Error parsing arguments." << std::endl;
+    std::cerr << "" << " [OPTIONS] map" << std::endl;
+    std::cerr << "Options: " << argParser.GetHelp() << std::endl;
+    return EXIT_FAILURE;
+  }
+  char** newArgv = 0;
+  int newArgc = 0;
+  argParser.GetUnusedArguments(&newArgc, &newArgv);
+  if (newArgc == 2)
+  {
+    map = newArgv[1];
+  }
+  else
+  {
+    std::cerr << "Error parsing arguments" << std::endl;
+    std::cerr << "Options: " << argParser.GetHelp() << std::endl;
+    return EXIT_FAILURE;
+  }
+  argParser.DeleteRemainingArguments(newArgc, &newArgv);
 
   const unsigned int ImageDimension = 3;
-  typedef float PixelType;
-  typedef double CoordinateRepType;
-  typedef unsigned char SegPixelType;
   const unsigned int SpaceDimension = ImageDimension;
+  typedef float PixelType;
+  typedef unsigned int LabelType;
+
+  const LabelType MicroBleedLabel = static_cast< LabelType >(1);
+  const LabelType OthersLabel = static_cast< LabelType >(0);
 
   typedef itk::Image< PixelType, ImageDimension > ImageType;
-  typedef itk::Image< unsigned char, ImageDimension > LabelImageType;
+  typedef itk::Image< LabelType, ImageDimension > LabelImageType;
+
+  typedef itk::StatisticsLabelObject< LabelType, ImageDimension > StatisticsLabelObjectType;
+  typedef StatisticsLabelObjectType::LabelMapType StatisticsLabelMapType;
 
   typedef itk::ImageUtil< ImageType > ImageUtil;
   typedef itk::ImageUtil< LabelImageType > LabelImageUtil;
 
+  /*
+   * Load images
+   */
   ImageType::Pointer mapImg = ImageUtil::ReadImage(map);
 
-  float voxelSize = ImageUtil::GetPhysicalPixelSize(mapImg);
+  typedef itk::BinaryThresholdImageFilter< ImageType, LabelImageType > BinaryThresholdImageFilterT;
+  BinaryThresholdImageFilterT::Pointer thresholdImageFilter =
+      BinaryThresholdImageFilterT::New();
+  thresholdImageFilter->SetInput(mapImg);
+  thresholdImageFilter->SetLowerThreshold(thresh);
 
-  typedef itk::BinaryThresholdImageFilter< ImageType, ImageType > ThresholdType;
-  ThresholdType::Pointer threshFilter = ThresholdType::New();
-  threshFilter->SetInput(mapImg);
-  threshFilter->SetLowerThreshold(thresh);
-  threshFilter->SetOutsideValue(0);
-  threshFilter->SetInsideValue(1);
-
-  ImageType::Pointer openedMap = ImageUtil::GraftOutput(threshFilter, 0);
+  LabelImageType::Pointer binarizedMap = LabelImageUtil::GraftOutput(
+      thresholdImageFilter, 0);
   if (bridgeRad > 0)
   {
-    openedMap = ImageUtil::Opening(openedMap, bridgeRad, 1);
+    binarizedMap = LabelImageUtil::Opening(binarizedMap, bridgeRad, 1);
   }
 
-  // Create a ShapeLabelMap from the image
-  typedef itk::BinaryImageToShapeLabelMapFilter< ImageType > BinaryImageToShapeLabelMapFilterType;
-  BinaryImageToShapeLabelMapFilterType::Pointer binaryImageToShapeLabelMapFilter =
-      BinaryImageToShapeLabelMapFilterType::New();
-  binaryImageToShapeLabelMapFilter->SetInput(openedMap);
-  binaryImageToShapeLabelMapFilter->SetInputForegroundValue(1);
-  binaryImageToShapeLabelMapFilter->Update();
+  typedef itk::ConnectedComponentImageFilter< LabelImageType, LabelImageType > ConnectedComponentImageFilterType;
 
-  typedef itk::ShapeOpeningLabelMapFilter<
-      BinaryImageToShapeLabelMapFilterType::OutputImageType > ShapeOpeningLabelMapFilterType;
-  ShapeOpeningLabelMapFilterType::Pointer shapeOpeningLabelMapFilter =
-      ShapeOpeningLabelMapFilterType::New();
-  shapeOpeningLabelMapFilter->SetInput(
-      binaryImageToShapeLabelMapFilter->GetOutput());
-  shapeOpeningLabelMapFilter->SetLambda(minSize);
-  shapeOpeningLabelMapFilter->ReverseOrderingOff();
-  shapeOpeningLabelMapFilter->SetAttribute(
-      ShapeOpeningLabelMapFilterType::LabelObjectType::PHYSICAL_SIZE);
-  shapeOpeningLabelMapFilter->Update();
+  ConnectedComponentImageFilterType::Pointer connected =
+      ConnectedComponentImageFilterType::New();
+  connected->SetInput(binarizedMap);
+
+  typedef itk::LabelImageToShapeLabelMapFilter< LabelImageType,
+      StatisticsLabelMapType > LabelImageToShapeLabelType;
+  LabelImageToShapeLabelType::Pointer labelMapCreator =
+      LabelImageToShapeLabelType::New();
+  labelMapCreator->SetInput(connected->GetOutput());
+  labelMapCreator->Update();
+
+  typedef itk::StatisticsLabelMapFilter< StatisticsLabelMapType, ImageType > ImageStatisticsLabelMapFilterT;
+
+  ImageStatisticsLabelMapFilterT::Pointer labelStatisticsValuator =
+      ImageStatisticsLabelMapFilterT::New();
+
+  labelStatisticsValuator->ComputeFeretDiameterOff();
+  labelStatisticsValuator->ComputePerimeterOff();
+  labelStatisticsValuator->ComputeHistogramOff();
+  labelStatisticsValuator->SetInput(labelMapCreator->GetOutput());
+  labelStatisticsValuator->SetFeatureImage(mapImg);
+
+  labelStatisticsValuator->Update();
+  StatisticsLabelMapType::Pointer statLabelMap =
+      labelStatisticsValuator->GetOutput();
 
   float totalPhysicalSize = 0;
-  for (size_t i = 0;
-      i < shapeOpeningLabelMapFilter->GetOutput()->GetNumberOfLabelObjects();
-      i++)
+  for (size_t i = 1; i < statLabelMap->GetNumberOfLabelObjects(); i++)
   {
-    ShapeOpeningLabelMapFilterType::OutputImageType::LabelObjectType* labelObject =
-        shapeOpeningLabelMapFilter->GetOutput()->GetNthLabelObject(i);
-    totalPhysicalSize += labelObject->GetPhysicalSize();
-  }
 
-  if (seg != "")
-  {
-    // Create a label image
-    typedef itk::LabelMapToLabelImageFilter<
-        BinaryImageToShapeLabelMapFilterType::OutputImageType, LabelImageType > LabelMapToLabelImageFilterType;
-    LabelMapToLabelImageFilterType::Pointer labelMapToLabelImageFilter =
-        LabelMapToLabelImageFilterType::New();
-    labelMapToLabelImageFilter->SetInput(
-        shapeOpeningLabelMapFilter->GetOutput());
-    labelMapToLabelImageFilter->Update();
+    StatisticsLabelObjectType::Pointer objMB = statLabelMap->GetLabelObject(i);
+    bool toRemove = false;
+    std::string reasonDBG;
+    if (objMB->GetMaximum() < maxThresh)
+    {
+      toRemove = true;
+      reasonDBG = "Maximum is too low";
+    }
+    if (objMB->GetPhysicalSize() < minSize)
+    {
+      toRemove = true;
+      reasonDBG = "Detection is too small";
+    }
 
-    LabelImageUtil::WriteImage(seg, labelMapToLabelImageFilter->GetOutput());
+    if (toRemove)
+    {
+      statLabelMap->RemoveLabel(objMB->GetLabel());
+    }
+    else
+    {
+      totalPhysicalSize += objMB->GetPhysicalSize();
+    }
   }
   std::cout << totalPhysicalSize << ","
-  << shapeOpeningLabelMapFilter->GetOutput()->GetNumberOfLabelObjects()
-  << std::endl;
+            << statLabelMap->GetNumberOfLabelObjects() << std::endl;
+
+  if (!seg.empty())
+  {
+    typedef itk::LabelMapToBinaryImageFilter< StatisticsLabelMapType,
+        LabelImageType > LabelMapToBinaryImageFilterT;
+    LabelMapToBinaryImageFilterT::Pointer labelMapToBinaryImage =
+        LabelMapToBinaryImageFilterT::New();
+
+    labelMapToBinaryImage->SetInput(statLabelMap);
+    labelMapToBinaryImage->SetBackgroundValue(OthersLabel);
+    labelMapToBinaryImage->SetForegroundValue(MicroBleedLabel);
+    labelMapToBinaryImage->Update();
+
+    LabelImageUtil::WriteImage(seg, labelMapToBinaryImage->GetOutput());
+  }
 
   return EXIT_SUCCESS;
 }

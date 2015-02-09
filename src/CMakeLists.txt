@@ -87,6 +87,9 @@ target_link_libraries(resampleVector ${ITK_LIBRARIES})
 add_executable(CollapseModel CollapseModel.cxx)
 target_link_libraries(CollapseModel ${ITK_LIBRARIES})
 
+add_executable(Shark Shark.cxx)
+target_link_libraries(Shark ${ITK_LIBRARIES})
+
 
 install(TARGETS EvidentNormal TwoSampleKolmogorovSmirnovTest OneSampleKolmogorovSmirnovTest inhomogeneity brainExtraction TissueTypeSegmentation extractCSF separateWG refineBTS atlas ReportMap confusion relabel ComposeToVector linRegister resample resampleVector
         DESTINATION bin)
