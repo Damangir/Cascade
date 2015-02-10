@@ -2,7 +2,7 @@
 
 ##############################################################################
 #                                                                            #
-# Filename     : cascade.pipeline.modelfree.sh                                    #
+# Filename     : cascade.pipeline.modelfree.sh                               #
 #                                                                            #
 # Version      : 1.1                                                         #
 # Date         : 2015-02-03                                                  #

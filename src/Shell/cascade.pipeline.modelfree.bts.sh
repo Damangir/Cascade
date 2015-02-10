@@ -2,13 +2,13 @@
 
 ##############################################################################
 #                                                                            #
-# Filename     : cascade.pipeline.modelfree.freesurfer.sh                         #
+# Filename     : cascade.pipeline.modelfree.bts.sh                           #
 #                                                                            #
 # Version      : 1.1                                                         #
 # Date         : 2015-02-03                                                  #
 #                                                                            #
 # Description  : CASCADE Model free segmentation using original images and   #
-#                Freesurfer output                                           #
+#                brain tissue segmentation output                            #
 #                http://ki.se/en/nvs/cascade                                 #
 #                                                                            #
 # Copyright 2013-2015 Soheil Damangir                                        #

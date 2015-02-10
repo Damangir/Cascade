@@ -2,7 +2,7 @@
 
 ##############################################################################
 #                                                                            #
-# Filename     : cascade.pipeline.modelfree.freesurfer.sh                         #
+# Filename     : cascade.pipeline.modelfree.freesurfer.sh                    #
 #                                                                            #
 # Version      : 1.1                                                         #
 # Date         : 2015-02-03                                                  #

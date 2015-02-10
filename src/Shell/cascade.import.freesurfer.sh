@@ -2,12 +2,12 @@
 
 ##############################################################################
 #                                                                            #
-# Filename     : cascade.core.modelfree.sh                                   #
+# Filename     : cascade.import.freesurfer.sh                                #
 #                                                                            #
 # Version      : 1.1                                                         #
 # Date         : 2015-02-03                                                  #
 #                                                                            #
-# Description  : CASCADE model free segmentation                             #
+# Description  : CASCADE import freesurfer segmentations                     #
 #                http://ki.se/en/nvs/cascade                                 #
 #                                                                            #
 # Copyright 2013-2015 Soheil Damangir                                        #
@@ -47,7 +47,7 @@ fi
 # Import freesurfer data                                                     #
 ##############################################################################
 
-if command -v mri_convert
+if [ $(command -v mri_convert) ]
 then
 	EXEC mri_convert ${FS_T1} ${OUTPUT_DIR}${FS_T1_NII}
 	EXEC mri_convert ${FS_ASEG} ${OUTPUT_DIR}${BTS_MAP}

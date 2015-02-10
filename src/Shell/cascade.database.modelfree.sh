@@ -8,7 +8,7 @@
 # Date         : 2015-02-03                                                  #
 #                                                                            #
 # Description  : CASCADE Model free segmentation using original images and   #
-#                Freesurfer output                                           #
+#                Freesurfer output  for the whole database                   #
 #                http://ki.se/en/nvs/cascade                                 #
 #                                                                            #
 # Copyright 2013-2015 Soheil Damangir                                        #

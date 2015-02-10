@@ -7,11 +7,11 @@ set (Cascade_VERSION_MINOR 0)
 
 SET(CMAKE_BUILD_TYPE DEBUG)
 
-FIND_PACKAGE(ITK 4.5 REQUIRED)
+FIND_PACKAGE(ITK 4.3 REQUIRED)
 IF(ITK_FOUND)
 	INCLUDE(${ITK_USE_FILE})
 ELSE(ITK_FOUND)
-	MESSAGE(FATAL_ERROR"ITK 4.5+ not found. Please set ITK_DIR.")
+	MESSAGE(FATAL_ERROR"ITK 4.3+ not found. Please set ITK_DIR.")
 ENDIF(ITK_FOUND)
 
 # WML separation
@@ -94,6 +94,13 @@ target_link_libraries(Shark ${ITK_LIBRARIES})
 install(TARGETS EvidentNormal TwoSampleKolmogorovSmirnovTest OneSampleKolmogorovSmirnovTest inhomogeneity brainExtraction TissueTypeSegmentation extractCSF separateWG refineBTS atlas ReportMap confusion relabel ComposeToVector linRegister resample resampleVector
         DESTINATION bin)
         
+install(DIRECTORY Shell
+		DESTINATION bin
+		PATTERN "*.sh"
+        PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                    GROUP_EXECUTE GROUP_READ
+                    WORLD_EXECUTE WORLD_READ)
+
 install(DIRECTORY python
 		DESTINATION bin
 		PATTERN ".pyc" EXCLUDE
