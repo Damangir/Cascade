@@ -11,7 +11,7 @@ import util.checkpython
 import util.terminalsize
 from warnings import catch_warnings
 
-runtimeString = time.strftime("%Y%m%d%H%M%S")
+runtimeString = time.strftime("%Y-%m-%d_%H-%M-%S")
 
 # Fix the envirnment variable for width. It is not corectly set on all platforms
 os.environ['COLUMNS'] = str(util.terminalsize.get_terminal_size()[0])
@@ -87,18 +87,30 @@ reportOptions.add_argument('--report-size', default=0, type=float,
                     help='Minimum lesion size to report (in mm^3).'+defaultStr)
 
 options = parser.parse_args()
-logger, logger_mutex = ruffus.cmdline.setup_logging (__name__, options.log_file, options.verbose)
 os.environ['CASCADE_VERBOSE'] =  str(options.verbose)
 import cascade
-cascade.logger, cascade.logger_mutex = ruffus.cmdline.setup_logging ('cascade', options.log_file, options.verbose)
+print cascade.Copyright()
+cascadeManager = cascade.CascadeFileManager(options.root)
+
+if not options.log_file:
+    options.log_file = cascadeManager.reportName("cascade.log", runtimeString)
+cascade.logger, cascade.logger_mutex = ruffus.proxy_logger.make_shared_logger_and_proxy (cascade.setup_logging_factory,
+                                                                                         'Cascade',
+                                                                                         [options.log_file, options.verbose])
 
 if not any([options.t2,options.flair,options.pd]):
+    with cascade.logger_mutex:
+        cascade.logger.error('At least one of FLAIR, T2 or PD should be specified.')
     parser.error('At least one of FLAIR, T2 or PD should be specified.')
 
 if len(filter(None, [options.freesurfer,options.brain_mask])) > 1:
+    with cascade.logger_mutex:
+        cascade.logger.error('You can import only from one source.')
     parser.error('You can import only from one source.')
 
 if len(filter(None, [options.simple,options.model_dir])) > 1:
+    with cascade.logger_mutex:
+        cascade.logger.error('You should either use simple mode or test/train mode.')
     parser.error('You should either use simple mode or test/train mode.')
 
 if options.simple:
@@ -121,11 +133,26 @@ testDir = {'FLAIR': 'pos', 'T1':'neg', 'T2':'pos', 'PD':'pos'}
 
 inputImages = dict(filter(lambda x: x[1] is not None, inputImages.iteritems()))
 
+for opt_name,opt_value in sorted(vars(options).items()):
+    if opt_value:
+        with cascade.logger_mutex:
+                cascade.logger.debug('%s : %s', opt_name,opt_value)
+
+for opt_name,opt_value in sorted(vars(options).items()):
+    if not opt_value:
+        with cascade.logger_mutex:
+                cascade.logger.debug('%s : %s', opt_name,opt_value)
+     
+
 for imgName, imgFile in inputImages.iteritems():
     if not os.path.exists(imgFile):
+        with cascade.logger_mutex:
+            cascade.logger.error('%s file does not exist: %s',imgName, imgFile)
+
         raise Exception('{} file does not exist: {}'.format(imgName, imgFile))
     else:
-        print '{} file exists: {}'.format(imgName, imgFile)
+        with cascade.logger_mutex:
+            cascade.logger.debug('%s file exist: %s',imgName, imgFile)
 
 if options.calculation_space in inputImages:    
     calculationSpace = options.calculation_space
@@ -134,7 +161,6 @@ else:
 
 calculationBase = inputImages[calculationSpace]
 
-cascadeManager = cascade.CascadeFileManager(options.root)
 cascadeManager.calcSpace = calculationSpace
 
 
@@ -155,7 +181,6 @@ if testMode:
         if not os.path.exists(modelName):
             raise Exception('No model found at {}'.format(modelName))
 
-print cascade.Copyright()
 
 ###############################################################################
 # Bring each sequence into the pipeline
@@ -713,4 +738,4 @@ if __name__ == '__main__':
         except:
             pass    
 
-    ruffus.cmdline.run (options, pipeline_name = 'Cascade pipeline')
+    ruffus.cmdline.run (options, pipeline_name = 'Cascade pipeline', logger=cascade.logger)

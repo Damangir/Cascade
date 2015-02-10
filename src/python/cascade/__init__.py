@@ -5,7 +5,7 @@ __date__    = "24 September 2014"
 
 def Copyright():
     return """
-The Cascade pipeline. http://ki.se/en/nvs/cascade
+The Cascade Academics pipeline. http://ki.se/en/nvs/cascade
 Copyright (C) 2013-2014 Soheil Damangir - All Rights Reserved
 """
 
@@ -20,11 +20,12 @@ To view a copy of the license, visit:
 http://creativecommons.org/licenses/by-nc-nd/3.0/
 """
 
+import sys
 import os
 import shutil
 import logging
 
-logging.basicConfig()
+#logging.basicConfig()
 class DummyMutex():    
     def __enter__(self):
       pass
@@ -33,19 +34,84 @@ class DummyMutex():
 
 logger = logging.getLogger(__name__)  
 logger_mutex = DummyMutex()
-verbose = os.environ.get('CASCADE_VERBOSE')
-if verbose == '0':
-    logger.setLevel(logging.CRITICAL)
-elif verbose == '1':
-    logger.setLevel(logging.ERROR)
-elif verbose == '2':
-    logger.setLevel(logging.WARNING)
-elif verbose == '3':
-    logger.setLevel(logging.INFO)
-elif verbose == '4':
-    logger.setLevel(logging.DEBUG)
-else:
-    logger.setLevel(logging.CRITICAL)
+
+
+def get_logging_level_from_verbose(verbose):
+    if verbose == 0:
+        return logging.CRITICAL
+    elif verbose == 1:
+        return logging.ERROR
+    elif verbose == 2:
+        return logging.WARNING
+    elif verbose == 3:
+        return logging.INFO
+    elif verbose == 4:
+        return logging.DEBUG
+    elif verbose > 4:
+        return 0
+    else:
+        return logging.CRITICAL
+    
+def setup_logging_factory (logger_name, args):
+    log_file_name, verbose = args
+    """
+    This function is a copy of setup_logging_factory of ruffus pipeline
+    """
+    #
+    #   Log file name with logger level
+    #
+    new_logger = logging.getLogger(logger_name)
+
+    class NullHandler(logging.Handler):
+        """
+        for when there is no logging
+        """
+        def emit(self, record):
+            pass
+
+    # We are interesting in all messages
+    new_logger.setLevel(logging.DEBUG)
+    has_handler = False
+
+    # log to file if that is specified
+    if log_file_name:
+        handler = logging.FileHandler(log_file_name, delay=False)
+        class stipped_down_formatter(logging.Formatter):
+            def format(self, record):
+                prefix = ""
+                if not hasattr(self, "first_used"):
+                    self.first_used = True
+                    prefix = "-"*80 + Copyright() 
+                    prefix +="%(name)s run at " % record.__dict__
+                    prefix += self.formatTime(record, "%Y-%m-%d %H:%M:%S")+"\n" 
+                    prefix += "-"*80
+                    prefix += "\n"
+
+                self._fmt = " %(asctime)s %(levelname)-7s: %(message)s"
+                return prefix + logging.Formatter.format(self, record)
+        handler.setFormatter(stipped_down_formatter("%(asctime)s - %(name)s - %(levelname)6s - %(message)s", "%H:%M:%S"))
+        handler.setLevel(0)
+        new_logger.addHandler(handler)
+        has_handler = True
+
+    # log to stderr if verbose
+    if verbose:
+        stderrhandler = logging.StreamHandler(sys.stderr)
+        stderrhandler.setFormatter(logging.Formatter("%(message)s"))
+        stderrhandler.setLevel(logging.INFO)
+        new_logger.addHandler(stderrhandler)
+        has_handler = True
+
+    # no logging
+    if not has_handler:
+        new_logger.addHandler(NullHandler())
+
+    #
+    #   This log object will be wrapped in proxy
+    #
+    return new_logger
+
+
 
 from cascade import config
 from cascade import util

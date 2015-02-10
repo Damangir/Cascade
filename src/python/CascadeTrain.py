@@ -24,11 +24,12 @@ parser.add_argument('--model-dir', default='.', help='Directory for the output m
 
 options = parser.parse_args()
 
-logger, logger_mutex = ruffus.cmdline.setup_logging (__name__, options.log_file, options.verbose)
-
 import cascade
-
 print cascade.Copyright()
+
+cascade.logger, cascade.logger_mutex = ruffus.proxy_logger.make_shared_logger_and_proxy (cascade.setup_logging_factory,
+                                                                                         'Cascade',
+                                                                                         [options.log_file, options.verbose])
 
 inputImages=[]
 for img in ['FLAIR', 'T1', 'T2', 'PD']:

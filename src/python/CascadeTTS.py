@@ -55,10 +55,11 @@ priorOptions.add_argument('--wm' , metavar='GM.nii.gz',
                     help='WM Prior probability image.')
 
 options = parser.parse_args()
-logger, logger_mutex = ruffus.cmdline.setup_logging (__name__, options.log_file, options.verbose)
-os.environ['CASCADE_VERBOSE'] = str(options.verbose)
 import cascade
-cascade.logger, cascade.logger_mutex = ruffus.cmdline.setup_logging ('cascade', options.log_file, options.verbose)
+print cascade.Copyright()
+cascade.logger, cascade.logger_mutex = ruffus.proxy_logger.make_shared_logger_and_proxy (cascade.setup_logging_factory,
+                                                                                         'Cascade',
+                                                                                         [options.log_file, options.verbose])
 
 if not any([options.t1, options.t2, options.flair, options.pd]):
     parser.error('At least one of input sequences must be set.')

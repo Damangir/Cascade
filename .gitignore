@@ -1,4 +1,5 @@
 build/
+opt/
 .project
 .DS_Store
 *.pyc
