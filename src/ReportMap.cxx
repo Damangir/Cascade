@@ -18,14 +18,6 @@
 
 int main(int argc, const char **argv)
 {
-  std::string pathOut;
-  {
-    std::string tmp;
-    itksys::SystemTools::FindProgramPath(argv[0], pathOut, tmp);
-    itksys::SystemTools::SplitProgramPath(pathOut.c_str(), tmp, pathOut);
-    std::cout << pathOut << std::endl;
-    return EXIT_FAILURE;
-  }
   std::string map;
   std::string seg = "";
   double thresh = 0;
