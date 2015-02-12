@@ -77,8 +77,8 @@ int main(int argc, const char **argv)
   typedef float PixelType;
   typedef unsigned int LabelType;
 
-  const LabelType MicroBleedLabel = static_cast< LabelType >(1);
-  const LabelType OthersLabel = static_cast< LabelType >(0);
+  const LabelType insideLabel = static_cast< LabelType >(1);
+  const LabelType outsideLabel = static_cast< LabelType >(0);
 
   typedef itk::Image< PixelType, ImageDimension > ImageType;
   typedef itk::Image< LabelType, ImageDimension > LabelImageType;
@@ -98,13 +98,15 @@ int main(int argc, const char **argv)
   BinaryThresholdImageFilterT::Pointer thresholdImageFilter =
       BinaryThresholdImageFilterT::New();
   thresholdImageFilter->SetInput(mapImg);
+  thresholdImageFilter->SetInsideValue(insideLabel);
+  thresholdImageFilter->SetOutsideValue(outsideLabel);
   thresholdImageFilter->SetLowerThreshold(thresh);
 
   LabelImageType::Pointer binarizedMap = LabelImageUtil::GraftOutput(
       thresholdImageFilter, 0);
   if (bridgeRad > 0)
   {
-    binarizedMap = LabelImageUtil::Opening(binarizedMap, bridgeRad, 1);
+    binarizedMap = LabelImageUtil::Opening(binarizedMap, bridgeRad, insideLabel);
   }
 
   typedef itk::ConnectedComponentImageFilter< LabelImageType, LabelImageType > ConnectedComponentImageFilterType;
@@ -173,8 +175,8 @@ int main(int argc, const char **argv)
         LabelMapToBinaryImageFilterT::New();
 
     labelMapToBinaryImage->SetInput(statLabelMap);
-    labelMapToBinaryImage->SetBackgroundValue(OthersLabel);
-    labelMapToBinaryImage->SetForegroundValue(MicroBleedLabel);
+    labelMapToBinaryImage->SetBackgroundValue(outsideLabel);
+    labelMapToBinaryImage->SetForegroundValue(insideLabel);
     labelMapToBinaryImage->Update();
 
     LabelImageUtil::WriteImage(seg, labelMapToBinaryImage->GetOutput());
