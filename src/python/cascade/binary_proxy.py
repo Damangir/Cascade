@@ -96,7 +96,7 @@ def check_output(cmd, args, output_files=None, silent=False, just_print=False):
             with cascade.logger_mutex:
                 cascade.logger.error('Error running %s', ' '.join([cmd] + args))
             cascade.util.ensureAbsence(output_files)
-            raise CalledProcessError(retcode, cmd, out)
+            raise subprocess.CalledProcessError(retcode, cmd, out)
         else:
             with cascade.logger_mutex:
                 cascade.logger.debug(command_txt + '\nTimeElapsed:%.1f s' , time.time() - tc)
