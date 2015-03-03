@@ -91,7 +91,7 @@ add_executable(StatisticTest StatisticTest.cxx)
 target_link_libraries(StatisticTest ${ITK_LIBRARIES})
 
 
-install(TARGETS EvidentNormal TwoSampleKolmogorovSmirnovTest OneSampleKolmogorovSmirnovTest inhomogeneity brainExtraction TissueTypeSegmentation extractCSF separateWG refineBTS atlas ReportMap confusion relabel ComposeToVector linRegister resample resampleVector
+install(TARGETS StatisticTest ImportImage DICOMReader EvidentNormal TwoSampleKolmogorovSmirnovTest OneSampleKolmogorovSmirnovTest inhomogeneity brainExtraction TissueTypeSegmentation extractCSF separateWG refineBTS atlas ReportMap confusion relabel ComposeToVector linRegister resample resampleVector
         DESTINATION bin)
         
 install(DIRECTORY Shell
