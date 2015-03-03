@@ -49,10 +49,10 @@ public:
   itkGetConstMacro(BackgroundPixel, InputPixelType);
   itkSetMacro(BackgroundPixel, InputPixelType);
 
-  itkGetModifiableObjectMacro(Statistics,StatisticsTestType);
+  itkGetObjectMacro(Statistics,StatisticsTestType);
   itkSetObjectMacro(Statistics, StatisticsTestType);
 
-  itkGetModifiableObjectMacro(RefrenceSample,ReferenceSampleType);
+  itkGetObjectMacro(RefrenceSample,ReferenceSampleType);
   itkSetObjectMacro(RefrenceSample, ReferenceSampleType);
 
 #ifdef ITK_USE_CONCEPT_CHECKING
