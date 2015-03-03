@@ -6,6 +6,7 @@
 #include "itkObject.h"
 #include "itkObjectFactory.h"
 #include "itkImageSource.h"
+#include "itkMaskImageFilter.h"
 
 #include <string>
 #include <vector>
@@ -80,6 +81,9 @@ public:
 
   static ImagePointer
   Closing(const ImageType* img, float r, float foreground = 1);
+
+  static ImagePointer
+  Mask(const ImageType* img, const ImageType* mask, float background = 0);
 
   static void ImageExtent(const ImageType* img, PixelType& minValue,
                    PixelType& maxValue, double quantile = 0.01);

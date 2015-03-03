@@ -1,6 +1,6 @@
 ##############################################################################
 #                                                                            #
-# Filename     : cascade.config.sh                                      #
+# Filename     : cascade.config.sh                                           #
 #                                                                            #
 # Version      : 1.0                                                         #
 # Date         : 2015-02-03                                                  #
@@ -17,45 +17,71 @@ WHITE_MATTER_LABEL=3
 
 BTS_MAP=brain.tissues.nii.gz
 FS_T1_NII=rawavg.nii.gz
+FS_ASEG_NII=aseg.nii.gz
+
+for IMG in T1 FLAIR T2 PD
+do
+IMG_U=$( tr '[:lower:]' '[:upper:]' <<<$IMG )
+IMG_L=$( tr '[:upper:]' '[:lower:]' <<<$IMG )
+##############################################################################
+# Coregistration                                                             #
+##############################################################################
+eval ${IMG_U}_REGISTERED=${IMG_L}.coreg.nii.gz
+eval ${IMG_U}_TO_REF=${IMG_L}.to.ref.tfm
+eval ${IMG_U}_FROM_REF=${IMG_L}.from.ref.tfm
+
+##############################################################################
+# Normalizing input images                                                   #
+##############################################################################
+eval ${IMG_U}_NORM=${IMG_L}.normalized.nii.gz
+##############################################################################
+# Remove evidently normal brain tissues                                      #
+##############################################################################
+eval ${IMG_U}_EVID=${IMG_L}.evident.nii.gz
+##############################################################################
+# CASCADE Model free segmentation                                            #
+##############################################################################
+eval ${IMG_U}_PVAL=${IMG_L}.modelfree.pval.nii.gz
+##############################################################################
+# CASCADE Pre-Train model                                                    #
+##############################################################################
+eval ${IMG_U}_STD=${IMG_L}.standard.nii.gz
+##############################################################################
+# CASCADE definition segmentation                                            #
+##############################################################################
+eval ${IMG_U}_MODEL=${IMG_L}.model.nii.gz
+eval ${IMG_U}_MODEL_NATIVE=${IMG_L}.model.native.nii.gz	
+
+##############################################################################
+# CASCADE Extra                                                              #
+##############################################################################
+eval ${IMG_U}_TO_MNI=${IMG_L}.to.mni.tfm
+eval ${IMG_U}_TO_MNI_L=${IMG_L}.to.mni.lin.tfm
+eval ${IMG_U}_TO_MNI_NL=${IMG_L}.to.mni.nl.nii.gz
+
+eval MNI_TO_${IMG_U}=mni.to.${IMG_L}.tfm
+eval MNI_TO_${IMG_U}_L=mni.to.${IMG_L}.lin.tfm
+eval MNI_TO_${IMG_U}_NL=mni.to.${IMG_L}.nl.nii.gz
+
+eval BTS_IN_${IMG_U}=brain.tissues.${IMG_L}.nii.gz																																																																																																																																																																																																																																																																																																																																																																																																																																																																								
+done
 
 ##############################################################################
 # Coregistration                                                             #
 ##############################################################################
 
-T1_REGISTERED=t1.coreg.nii.gz
-FLAIR_REGISTERED=flair.coreg.nii.gz
-T2_REGISTERED=t2.coreg.nii.gz
-PD_REGISTERED=pd.coreg.nii.gz
+IMG_TO_MNI=img.to.mni.tfm
+IMG_TO_MNI_L=img.to.mni.lin.tfm
+IMG_TO_MNI_NL=img.to.mni.nl.nii.gz
 
+MNI_TO_IMG=mni.to.img.tfm
+MNI_TO_IMG_L=mni.to.img.lin.tfm
+MNI_TO_IMG_NL=mni.to.img.nl.nii.gz
 BTS_REGISTERED=brain.tissues.coreg.nii.gz
-
-T1_TO_REF=t1.to.ref.tfm
-FLAIR_TO_REF=flair.to.ref.tfm
-T2_TO_REF=t2.to.ref.tfm
-PD_TO_REF=pd.to.ref.tfm
-
-T1_FROM_REF=t1.from.ref.tfm
-FLAIR_FROM_REF=flair.from.ref.tfm
-T2_FROM_REF=t2.from.ref.tfm
-PD_FROM_REF=pd.from.ref.tfm
-
-##############################################################################
-# Normalizing input images                                                   #
-##############################################################################
-
-T1_NORM=t1.normalized.nii.gz
-FLAIR_NORM=flair.normalized.nii.gz
-T2_NORM=t2.normalized.nii.gz
-PD_NORM=pd.normalized.nii.gz
 
 ##############################################################################
 # Remove evidently normal brain tissues                                      #
 ##############################################################################
-
-T1_EVID=t1.evident.nii.gz
-FLAIR_EVID=flair.evident.nii.gz
-T2_EVID=t2.evident.nii.gz
-PD_EVID=pd.evident.nii.gz
 
 T1_PER=-0.90
 FLAIR_PER=0.5
@@ -68,11 +94,6 @@ PD_PER=0.1
 
 RADIUS=1
 
-T1_PVAL=t1.modelfree.pval.nii.gz
-FLAIR_PVAL=flair.modelfree.pval.nii.gz
-T2_PVAL=t2.modelfree.pval.nii.gz
-PD_PVAL=pd.modelfree.pval.nii.gz
-
 T1_DIR=neg
 FLAIR_DIR=pos
 T2_DIR=pos
@@ -82,28 +103,9 @@ PD_DIR=pos
 # CASCADE Pre-Train model                                                    #
 ##############################################################################
 
-T1_STD=t1.standard.nii.gz
-FLAIR_STD=flair.standard.nii.gz
-T2_STD=t2.standard.nii.gz
-PD_STD=pd.standard.nii.gz
-
 BTS_STD=brain.tissue.standard.nii.gz
 TRAIN_MASK_STD=train.mask.standard.nii.gz
 
-STANDARD_IMAGE=${CASCADE_DATA%/}/MNI.nii.gz
-##############################################################################
-# CASCADE definition segmentation                                            #
-##############################################################################
-
-T1_MODEL=t1.model.nii.gz
-FLAIR_MODEL=flair.model.nii.gz
-T2_MODEL=t2.model.nii.gz
-PD_MODEL=pd.model.nii.gz
-
-T1_MODEL_NATIVE=t1.model.native.nii.gz
-FLAIR_MODEL_NATIVE=flair.model.native.nii.gz
-T2_MODEL_NATIVE=t2.model.native.nii.gz
-PD_MODEL_NATIVE=pd.model.native.nii.gz
 
 ##############################################################################
 # Utilities                                                                  #
@@ -134,25 +136,31 @@ fi
 
 CHECK_IF_SET(){
 sanity_check=0
-[ $CREATE_PIPELINE ] &&  hrule
+[ -z "$SILENT_CHECK" ] && [ $CREATE_PIPELINE ] && hrule
 for should_be_set in $@
 do
 	eval value=\$${should_be_set}
-	if [ -z $value ]
+	if [ -z "$value" ]
 	then
 		sanity_check=1
-		ERROR "$should_be_set is not set"
-	else
-		if [ "$CREATE_PIPELINE" ]
+		if [ -z "$SILENT_CHECK" ]
 		then
-			cline $should_be_set=$value
-		else 
-			INFO $should_be_set=$value
+			ERROR "$should_be_set is not set"
+		fi
+	else
+		if [ -z "$SILENT_CHECK" ]
+		then		
+			if [ "$CREATE_PIPELINE" ]
+			then
+				cline $should_be_set=$value
+			else 
+				INFO $should_be_set=$value
+			fi
 		fi
 	fi
 	unset -v value
 done
-[ $CREATE_PIPELINE ] && hrule
+[ -z "$SILENT_CHECK" ] && [ $CREATE_PIPELINE ] && hrule
 return $sanity_check
 }
 
@@ -166,7 +174,7 @@ if [ -f "$1" ]
 then
 	INFO "Importing settings from $1"
 	source $1
-	SHIFTED_ARGS="$SHIFTED_ARGS $1"
+	SHIFTED_ARGS=$SHIFTED_ARGS "$1"
 	shift
 fi
 
@@ -180,7 +188,7 @@ do
 		then
 			TO_EVAL="$( tr '[:lower:]' '[:upper:]'<<<$ARG_KEY )=\\$ARG_VALUE"
 		else
-			TO_EVAL="$( tr '[:lower:]' '[:upper:]'<<<$ARG_KEY )=$ARG_VALUE"
+			TO_EVAL="$( tr '[:lower:]' '[:upper:]'<<<$ARG_KEY )='$ARG_VALUE'"
 		fi
 		eval "$TO_EVAL"
 	else 
@@ -203,12 +211,19 @@ if  [ "${CASCADE_BIN}" ] && [ -d "${CASCADE_BIN}" ]
 then
 	CASCADE_BIN=${CASCADE_BIN%/}/
 else
-	ERROR CASCADE_DATA not set. 
+	ERROR CASCADE_BIN not set. 
 	exit 1		
 fi
 
+[ "$PRIOR_CSF_MNI" ] || PRIOR_CSF_MNI=${CASCADE_DATA}/std/avg152T1_csf.nii.gz
+[ "$PRIOR_GM_MNI" ] || PRIOR_GM_MNI=${CASCADE_DATA}/std/avg152T1_gray.nii.gz
+[ "$PRIOR_WM_MNI" ] || PRIOR_WM_MNI=${CASCADE_DATA}/std/avg152T1_white.nii.gz
 
-[ $STANDARD_IMAGE ] || STANDARD_IMAGE=${CASCADE_DATA%/}/MNI.nii.gz
+[ "$MNI_ALL" ] || MNI_ALL=${CASCADE_DATA}/std/MNI152_T1_2mm.nii.gz
+[ "$MNI_BRAIN" ] || MNI_BRAIN=${CASCADE_DATA}/std/MNI152_T1_2mm_brain.nii.gz
+[ "$MNI_BRAIN_MASK" ] || MNI_BRAIN_MASK=${CASCADE_DATA}/std/MNI152_T1_2mm_brain_mask.nii.gz
+
+[ $STANDARD_IMAGE ] || STANDARD_IMAGE=$MNI_ALL
 
 ##############################################################################
 # Utility functions                                                          #
@@ -234,10 +249,11 @@ hrule
 
 EXEC()
 {
-	echo $@
+	CMD=$(printf '"%s" ' "$@")
+	echo $CMD
 	if [ -z "$CREATE_PIPELINE" ];
 	then
-		$@;
+		"$@";
 		return $?
 	else
 		return 0

@@ -188,7 +188,7 @@ main(int argc, char *argv[])
       connectedStatFilter->GetOutput();
 
   std::cerr << "All gray matter blobs that " << beta * 100 << "% ";
-  std::cerr << "of its border is white matter will convert to gray matter.";
+  std::cerr << "of its border is white matter will convert to white matter.";
   std::cerr << std::endl;
   StatisticsLabelObjectType::HistogramType::MeasurementVectorType mv(
       1);

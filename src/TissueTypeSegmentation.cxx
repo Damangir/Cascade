@@ -18,8 +18,6 @@
 #include <vector>
 #include <algorithm>
 
-#include "imageHelpers.h"
-
 namespace CU = cascade::util;
 
 int
@@ -165,7 +163,7 @@ main(int argc, char *argv[])
     }
 
   MAPMarkovFilter->SetPriorVectorImage(priorImage);
-  MAPMarkovFilter->SetPriorBias(0.1);
+  MAPMarkovFilter->SetPriorBias(0.05);
   MAPMarkovFilter->SetNumberOfIterations(1);
   MAPMarkovFilter->SetMembershipVectorImage(membershipFilter->GetOutput());
   MAPMarkovFilter->Update();

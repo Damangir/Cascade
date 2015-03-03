@@ -303,8 +303,6 @@ main(int argc, char *argv[])
       ClassifidImageType::Pointer SmallGMMask = CU::GraftOutput<
           LabelMapToLabelImageFilterType >(labelMapToLabelImageFilter);
 
-      CU::WriteImage< ClassifidImageType >("smallGM.nii.gz", SmallGMMask);
-
       newBTS = CU::Add< ClassifidImageType, ClassifidImageType >(
           newBTS, CU::MultiplyConstant< ClassifidImageType >(SmallGMMask, 2));
 

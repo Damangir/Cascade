@@ -42,15 +42,15 @@ then
 fi
 
 FREESURFER_DIR=${FREESURFER_DIR%/}
-if [ $FS_ASEG ]
+if [ "$FS_ASEG" ]
 then
-	FREESURFER_DIR=$(dirname $(dirname $FS_ASEG))
+	FREESURFER_DIR=$(dirname "$(dirname "$FS_ASEG")")
 else
-	[ $FREESURFER_DIR ] && FS_ASEG=${FREESURFER_DIR}/mri/aseg.mgz
+	[ "$FREESURFER_DIR" ] && FS_ASEG="${FREESURFER_DIR}/mri/aseg.mgz"
 fi
-[ -z $FS_T1 ] && [ $FREESURFER_DIR ] && FS_T1=${FREESURFER_DIR}/mri/rawavg.mgz
-[ ${FREESURFER_BTS_IMPORT} ] || FREESURFER_BTS_IMPORT=${CASCADE_DATA}/map/FS_label.map.txt
-[ ${UNITY_TRANSFORM} ] || UNITY_TRANSFORM=${CASCADE_DATA}/transform/unity.tfm
+[ -z "$FS_T1" ] && [ "$FREESURFER_DIR" ] && FS_T1="${FREESURFER_DIR}/mri/rawavg.mgz"
+[ "${FREESURFER_BTS_IMPORT}" ] || FREESURFER_BTS_IMPORT=${CASCADE_DATA}/map/FS_label.map.txt
+[ "${UNITY_TRANSFORM}" ] || UNITY_TRANSFORM=${CASCADE_DATA}/transform/unity.tfm
 
 
 CHECK_IF_SET FREESURFER_DIR FS_ASEG FREESURFER_BTS_IMPORT OUTPUT_DIR CASCADE_DATA WHITE_MATTER_LABEL OUTPUT RADIUS REFERENCE
@@ -89,27 +89,36 @@ export CASCADE_BIN
 export CREATE_PIPELINE
 
 
-BTS_MAP=${OUTPUT_DIR}${BTS_MAP}
-BTS_REG=${OUTPUT_DIR}${BTS_REGISTERED}
-
 echo;echo
 hrule
 cline "Begin: Import Freesurfer results"
 [ -z "$CREATE_PIPELINE" ] && hrule
-${SCRIPT_DIR}/cascade.import.freesurfer.sh $SHIFTED_ARGS FREESURFER_DIR=${FREESURFER_DIR} FS_ASEG=${FS_ASEG} FREESURFER_BTS_IMPORT=${FREESURFER_BTS_IMPORT}
+${SCRIPT_DIR}/cascade.import.freesurfer.sh $SHIFTED_ARGS FREESURFER_DIR="${FREESURFER_DIR}" FS_ASEG="${FS_ASEG}" FREESURFER_BTS_IMPORT="${FREESURFER_BTS_IMPORT}"
 comment "End:   Import Freesurfer results"
 
 echo;echo
 hrule
 cline "Begin: Preprocessing pipeline"
 [ -z "$CREATE_PIPELINE" ] && hrule
-${SCRIPT_DIR}/cascade.pipeline.pre.sh $SHIFTED_ARGS ${INPUT_SEQUENCES} BRAIN_TISSUE_SEG=${BTS_MAP} WHITE_MATTER_LABEL=${WHITE_MATTER_LABEL} BTS_REF=T1 REFERENCE=${REFERENCE}
+${SCRIPT_DIR}/cascade.pipeline.pre.sh $SHIFTED_ARGS ${INPUT_SEQUENCES} BRAIN_TISSUE_SEG="${OUTPUT_DIR}${BTS_MAP}" WHITE_MATTER_LABEL=${WHITE_MATTER_LABEL} BTS_REF=T1 REFERENCE="${REFERENCE}"
 comment "End:   Preprocessing pipeline"
 
+if [ $CORRECT_FREESURFER ]
+then
+echo;echo
+hrule
+BTS_UNCOR=${OUTPUT_DIR}bts_uncorrected.nii.gz
+EXEC mv "${OUTPUT_DIR}${BTS_REGISTERED}" ${BTS_UNCOR}
+hrule
+cline   "Begin: Correct brain tissue segmentation"
+[ -z "$CREATE_PIPELINE" ] && hrule
+${SCRIPT_DIR}/cascade.pre.refinebts.sh $SHIFTED_ARGS ${NORMAL_SEQUENCES} BTS_PRE="${BTS_UNCOR}" BTS_MAP="${BTS_REGISTERED}"
+comment "End:   Correct brain tissue segmentation"
+fi
 
 echo;echo
 hrule
 cline "Begin: Model free segmentation pipeline"
 [ -z "$CREATE_PIPELINE" ] && hrule
-${SCRIPT_DIR}/cascade.pipeline.modelfree.sh $SHIFTED_ARGS ${NORMAL_SEQUENCES} BRAIN_TISSUE_SEG=${BTS_REG} WHITE_MATTER_LABEL=${WHITE_MATTER_LABEL} OUTPUT=${OUTPUT} RADIUS=${RADIUS} 
+${SCRIPT_DIR}/cascade.pipeline.modelfree.sh $SHIFTED_ARGS ${NORMAL_SEQUENCES} BRAIN_TISSUE_SEG="${OUTPUT_DIR}${BTS_REGISTERED}" WHITE_MATTER_LABEL=${WHITE_MATTER_LABEL} OUTPUT=${OUTPUT} RADIUS=${RADIUS} 
 comment "End:   Model free segmentation pipeline"

@@ -3,6 +3,7 @@
 
 #include "itkFunctionBase.h"
 #include "itkMeasurementVectorTraits.h"
+#include "itkSample.h"
 
 #include "vector"
 

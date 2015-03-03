@@ -249,6 +249,19 @@ typename ImageUtil< TImage >::ImagePointer ImageUtil< TImage >::Closing(
 }
 
 template< typename TImage >
+typename ImageUtil< TImage >::ImagePointer ImageUtil< TImage >::Mask(
+    const ImageType* img, const ImageType* mask, float background)
+{
+  typedef MaskImageFilter< TImage, TImage, TImage > MaskType;
+  typename MaskType::Pointer maskFilter = MaskType::New();
+  maskFilter->SetInput(img);
+  maskFilter->SetMaskImage(mask);
+  maskFilter->SetOutsideValue(background);
+  ImagePointer output = Self::GraftOutput(maskFilter, 0);
+  return output;
+}
+
+template< typename TImage >
 void ImageUtil< TImage >::ImageExtent(const ImageType* img, PixelType& minValue,
                                       PixelType& maxValue, double quantile)
 {

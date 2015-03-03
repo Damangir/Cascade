@@ -133,7 +133,7 @@ int main(int argc, const char **argv)
   for (size_t i = 1; i < statLabelMap->GetNumberOfLabelObjects(); i++)
   {
 
-    StatisticsLabelObjectType::Pointer objMB = statLabelMap->GetLabelObject(i);
+    StatisticsLabelObjectType::Pointer objMB = statLabelMap->GetNthLabelObject(i);
     bool toRemove = false;
     std::string reasonDBG;
     if (objMB->GetMaximum() < maxThresh)
@@ -149,15 +149,17 @@ int main(int argc, const char **argv)
 
     if (toRemove)
     {
-      statLabelMap->RemoveLabel(objMB->GetLabel());
+      statLabelMap->RemoveLabelObject(objMB);
+      i--;
     }
     else
     {
       totalPhysicalSize += objMB->GetPhysicalSize();
     }
   }
+
   std::cout << totalPhysicalSize << ","
-            << statLabelMap->GetNumberOfLabelObjects() << std::endl;
+            << statLabelMap->GetNumberOfLabelObjects()-1 << std::endl;
 
   if (!seg.empty())
   {

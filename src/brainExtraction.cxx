@@ -9,7 +9,7 @@ int main( int argc, char *argv[] )
     {
     std::cerr << "Missing Parameters " << std::endl;
     std::cerr << "Usage: " << argv[0];
-    std::cerr << " image  stdBrainMask outputBrainMask";
+    std::cerr << " image stdBrainMask outputBrainMask";
     std::cerr << std::endl;
     return EXIT_FAILURE;
     }
@@ -36,7 +36,7 @@ int main( int argc, char *argv[] )
 
   brainExtractor->Update();
 
-  ImageUtil::WriteImage(subjectImage, brainExtractor->GetOutput());
+  ImageUtil::WriteImage(outputBrainMask, brainExtractor->GetOutput());
 
   return EXIT_SUCCESS;
 }
