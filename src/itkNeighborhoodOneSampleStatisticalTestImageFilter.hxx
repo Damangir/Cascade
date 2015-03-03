@@ -16,7 +16,7 @@ template< typename TInputImage, typename TOutputImage, typename TReferenceSample
 NeighborhoodOneSampleStatisticalTestImageFilter< TInputImage, TOutputImage,
     TReferenceSample >::NeighborhoodOneSampleStatisticalTestImageFilter()
 {
-  m_Statistics = ITK_NULLPTR;
+  m_Statistics=0;
   m_BackgroundPixel = NumericTraits< InputPixelType >::ZeroValue();
 }
 
