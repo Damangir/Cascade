@@ -1,9 +1,7 @@
-Cascade: Classification of White Matter Changes
+Cascade: Reproducible Segmentation of White Matter Changes using Strict Statistical Definition
 =======
 
-__This is the Cascade, academic version. Cascade-academic depends on FSL so you need acknowledge FSL terms of use before using this software.__
-
-__For the full version of the Cascade please contact the author [here](http://www.linkedin.com/in/soheildamangir)__
+__This is the Cascade, academic version. Cascade-academic depends on **FSL maths** so you need acknowledge FSL terms of use before using this software.__
 
 
 Content
