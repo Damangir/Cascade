@@ -55,7 +55,7 @@ build$ python ../src/python/Cascade.py -h
 
 Citation
 -------
-We are publishing a paper detailing Cascade. If you are using this software in your research, you may use information at:
+We are publishing a paper detailing Cascade. Until its publication, if you are using this software in your research, you may use information at:
 
 > Damangir S, Manzouri A, Oppedal K, Carlsson S, Firbank MJ, Sonnesyn H, Tysnes OB, O'Brien JT, Beyer MK, Westman E, Aarsland D, Wahlund LO, Spulber G. Multispectral MRI segmentation of age related white matter changes using a cascade of support vector machines. J Neurol Sci. 2012 Nov 15;322(1-2):211-6. doi: 10.1016/j.jns.2012.07.064. Epub 2012 Aug 24. PubMed PMID: 22921728.
 
