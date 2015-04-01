@@ -1,9 +1,7 @@
-Cascade: Classification of White Matter Lesions
+Cascade: Reproducible Segmentation of White Matter Changes using Strict Statistical Definition
 =======
 
-__This is the Cascade, academic version. Cascade-academic depends on FSL so you need acknowledge FSL terms of use before using this software.__
-
-__For the full version of the Cascade please contact the author [here](http://www.linkedin.com/in/soheildamangir)__
+__This is the Cascade, academic version. Cascade-academic depends on **FSL maths** so you need acknowledge FSL terms of use before using this software.__
 
 
 Content
@@ -17,7 +15,7 @@ Content
 
 Introduction
 -------
-Cascade, Classification of White Matter Lesions, is a fully automated tool for quantification of White Matter Lesions. Cascade is designed to be as flexible as possible. and can work with all sort of input sequences. It can work without any manually delineated samples as reference.
+Cascade, Classification of White Matter Changes, is a fully automated tool for quantification of White Matter Changes. Cascade is designed to be as flexible as possible. and can work with all sort of input sequences. It can work without any manually delineated samples as reference.
 
 Please [report any issue](https://github.com/Damangir/Cascade/issues) at https://github.com/Damangir/Cascade/issues.
 
@@ -28,8 +26,10 @@ In order to install the software you need to have the following application inst
  * Modern C++ compiler (gcc is recommended)
  * make
  * cmake 2.8+ (cmake.org)
- * Python 2.7+
  * Insight Toolkit 4.0+ (itk.org)
+
+For the automation scripts you may use:
+ * Python 2.7+
 
 You can check availability of these packages on your computer (on Unix-like computers e.g. Mac and Ubuntu). Please note the last command might take a few minutes to run.
 ```bash
@@ -55,13 +55,16 @@ build$ python ../src/python/Cascade.py -h
 
 Citation
 -------
-Any scientific work derived from the result of this software or its modifications should refer to [our paper](http://www.ncbi.nlm.nih.gov/pubmed/22921728):
+We are publishing a paper detailing Cascade. Until its publication, if you are using this software in your research, you may use information at:
 
 > Damangir S, Manzouri A, Oppedal K, Carlsson S, Firbank MJ, Sonnesyn H, Tysnes OB, O'Brien JT, Beyer MK, Westman E, Aarsland D, Wahlund LO, Spulber G. Multispectral MRI segmentation of age related white matter changes using a cascade of support vector machines. J Neurol Sci. 2012 Nov 15;322(1-2):211-6. doi: 10.1016/j.jns.2012.07.064. Epub 2012 Aug 24. PubMed PMID: 22921728.
 
+Any scientific work derived from the result of this software or its modifications should refer to these papers:
+* Single node reduced SVM for purging evident non-WMC: http://www.ncbi.nlm.nih.gov/pubmed/22921728
+
 Copyright
 -------
-Copyright (C) 2013-2014 [Soheil Damangir](http://www.linkedin.com/in/soheildamangir) - All Rights Reserved
+Copyright (C) 2013-2015 [Soheil Damangir](http://www.linkedin.com/in/soheildamangir) - All Rights Reserved
 
 License
 -------
