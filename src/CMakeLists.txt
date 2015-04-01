@@ -56,6 +56,9 @@ target_link_libraries(atlas ${ITK_LIBRARIES})
 add_executable(ReportMap ReportMap.cxx)
 target_link_libraries(ReportMap ${ITK_LIBRARIES})
 
+add_executable(CleanMap CleanMap.cxx)
+target_link_libraries(CleanMap ${ITK_LIBRARIES})
+
 # Utilities
 add_executable(LabelImageOpening LabelImageOpening.cxx)
 target_link_libraries(LabelImageOpening ${ITK_LIBRARIES})
