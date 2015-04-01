@@ -42,7 +42,7 @@ int main(int argc, const char **argv)
 
   argParser.StoreUnusedArguments(true);
 
-  if (!argParser.Parse())
+  if (!argParser.Parse() || mask=="" || input=="")
   {
     std::cerr << "Error parsing arguments." << std::endl;
     std::cerr << "" << " [OPTIONS]" << std::endl;
