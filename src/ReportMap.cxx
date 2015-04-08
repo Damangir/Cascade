@@ -25,9 +25,14 @@ int main(int argc, const char **argv)
   double bridgeRad = 0;
   double maxThresh = 0;
 
+  bool verbose = false;
+
   typedef itksys::CommandLineArguments argT;
   argT argParser;
   argParser.Initialize(argc, argv);
+
+  argParser.AddBooleanArgument("--verbose", &verbose,
+                        "Report the decision on all detection");
 
   argParser.AddArgument("--binary-seg", argT::SPACE_ARGUMENT, &seg,
                         "Generate binary segmentation");
@@ -98,6 +103,11 @@ int main(int argc, const char **argv)
       thresholdImageFilter, 0);
   if (bridgeRad > 0)
   {
+    if (verbose)
+    {
+      std::cerr << "Bridge Radius is " << LabelImageUtil::GetRadiusFromPhysicalSize(binarizedMap, bridgeRad) << std::endl;
+    }
+
     binarizedMap = LabelImageUtil::Opening(binarizedMap, bridgeRad, insideLabel);
   }
 
@@ -130,36 +140,45 @@ int main(int argc, const char **argv)
       labelStatisticsValuator->GetOutput();
 
   float totalPhysicalSize = 0;
-  for (size_t i = 1; i < statLabelMap->GetNumberOfLabelObjects(); i++)
+  for (size_t i = 0; i < statLabelMap->GetNumberOfLabelObjects(); i++)
   {
 
     StatisticsLabelObjectType::Pointer objMB = statLabelMap->GetNthLabelObject(i);
     bool toRemove = false;
-    std::string reasonDBG;
+    std::stringstream reasonDBG;
     if (objMB->GetMaximum() < maxThresh)
     {
       toRemove = true;
-      reasonDBG = "Maximum is too low";
+      reasonDBG << "Maximum is too low (Max=" << objMB->GetMaximum() << ")";
     }
     if (objMB->GetPhysicalSize() < minSize)
     {
       toRemove = true;
-      reasonDBG = "Detection is too small";
+      reasonDBG << "Detection is too small (PhysicalSize="<< objMB->GetPhysicalSize() <<")";
     }
 
     if (toRemove)
     {
+      if (verbose)
+      {
+        std::cerr << "Removed:" << objMB->GetLabel() << " ( reason=" << reasonDBG.str() << ")" << std::endl;
+      }
+
       statLabelMap->RemoveLabelObject(objMB);
       i--;
     }
     else
     {
+      if (verbose)
+      {
+        std::cerr << "Not removed:" << objMB->GetLabel() << std::endl;
+      }
       totalPhysicalSize += objMB->GetPhysicalSize();
     }
   }
 
   std::cout << totalPhysicalSize << ","
-            << statLabelMap->GetNumberOfLabelObjects()-1 << std::endl;
+            << statLabelMap->GetNumberOfLabelObjects() << std::endl;
 
   if (!seg.empty())
   {

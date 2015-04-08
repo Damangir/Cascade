@@ -128,7 +128,7 @@ int main(int argc, const char **argv)
     {
       if (verbose)
       {
-        std::cerr << "Removed:" << objMB->GetLabel() << " ( reason=" << reasonDBG.str() << " vol=" << objMB->GetPhysicalSize() << ")" << std::endl;
+        std::cerr << "Removed:" << objMB->GetLabel() << " ( reason=" << reasonDBG.str() << ")" << std::endl;
       }
       statLabelMap->RemoveLabelObject(objMB);
       i--;
@@ -137,7 +137,7 @@ int main(int argc, const char **argv)
     {
       if (verbose)
       {
-        std::cerr << "Not removed:" << objMB->GetLabel() << " (vol=" << objMB->GetPhysicalSize() << ")" << std::endl;
+        std::cerr << "Not removed:" << objMB->GetLabel() << std::endl;
       }
       totalPhysicalSize += objMB->GetPhysicalSize();
     }
