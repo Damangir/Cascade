@@ -107,7 +107,6 @@ int main(int argc, const char **argv)
   float totalPhysicalSize = 0;
   for (size_t i = 1; i < statLabelMap->GetNumberOfLabelObjects(); i++)
   {
-
     StatisticsLabelObjectType::Pointer objMB = statLabelMap->GetNthLabelObject(i);
     bool toRemove = false;
     std::string reasonDBG;
@@ -119,11 +118,13 @@ int main(int argc, const char **argv)
 
     if (toRemove)
     {
+      std::cout << "Removed:" << objMB->GetLabel() << " ( reason=" << reasonDBG << " vol=" << objMB->GetPhysicalSize() << ")" << std::endl;
       statLabelMap->RemoveLabelObject(objMB);
       i--;
     }
     else
     {
+      std::cout << "Not removed:" << objMB->GetLabel() << " (vol=" << objMB->GetPhysicalSize() << ")" << std::endl;
       totalPhysicalSize += objMB->GetPhysicalSize();
     }
   }
