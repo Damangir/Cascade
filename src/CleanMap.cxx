@@ -23,16 +23,20 @@ int main(int argc, const char **argv)
   std::string output = "";
   double minRad = 0;
   double meanThresh = -1;
+  bool verbose = false;
 
   typedef itksys::CommandLineArguments argT;
   argT argParser;
   argParser.Initialize(argc, argv);
 
 
+  argParser.AddBooleanArgument("--verbose", &verbose,
+                        "Report the decision on all detection");
+
   argParser.AddArgument("--radius", argT::SPACE_ARGUMENT, &minRad,
                         "Minimum distance to cleaning mask");
-  argParser.AddArgument("--mean-thresh", argT::SPACE_ARGUMENT, &meanThresh,
-                        "Mean coverage of the mask");
+  argParser.AddArgument("--overlap-thresh", argT::SPACE_ARGUMENT, &meanThresh,
+                        "Minimum percentage of the detection allowed to be overlapped by the mask");
   argParser.AddArgument("--output-seg", argT::SPACE_ARGUMENT, &output,
                         "Output segmentation");
   argParser.AddArgument("--mask", argT::SPACE_ARGUMENT, &mask,
@@ -73,6 +77,10 @@ int main(int argc, const char **argv)
   LabelImageType::Pointer cleanMask = LabelImageUtil::ReadImage(mask);
   if (minRad > 0)
   {
+    if (verbose)
+    {
+      std::cerr << "Radius is " << LabelImageUtil::GetRadiusFromPhysicalSize(cleanMask, minRad) << std::endl;
+    }
     cleanMask = LabelImageUtil::Dilate(cleanMask, minRad, insideLabel);
   }
 
@@ -105,32 +113,38 @@ int main(int argc, const char **argv)
       labelStatisticsValuator->GetOutput();
 
   float totalPhysicalSize = 0;
-  for (size_t i = 1; i < statLabelMap->GetNumberOfLabelObjects(); i++)
+  for (size_t i = 0; i < statLabelMap->GetNumberOfLabelObjects(); i++)
   {
     StatisticsLabelObjectType::Pointer objMB = statLabelMap->GetNthLabelObject(i);
     bool toRemove = false;
-    std::string reasonDBG;
+    std::stringstream reasonDBG;
     if (objMB->GetMean() > meanThresh)
     {
       toRemove = true;
-      reasonDBG = "Touches - Mean";
+      reasonDBG << "Touches - (Overlap " << objMB->GetMean() << ")";
     }
 
     if (toRemove)
     {
-      std::cout << "Removed:" << objMB->GetLabel() << " ( reason=" << reasonDBG << " vol=" << objMB->GetPhysicalSize() << ")" << std::endl;
+      if (verbose)
+      {
+        std::cerr << "Removed:" << objMB->GetLabel() << " ( reason=" << reasonDBG.str() << " vol=" << objMB->GetPhysicalSize() << ")" << std::endl;
+      }
       statLabelMap->RemoveLabelObject(objMB);
       i--;
     }
     else
     {
-      std::cout << "Not removed:" << objMB->GetLabel() << " (vol=" << objMB->GetPhysicalSize() << ")" << std::endl;
+      if (verbose)
+      {
+        std::cerr << "Not removed:" << objMB->GetLabel() << " (vol=" << objMB->GetPhysicalSize() << ")" << std::endl;
+      }
       totalPhysicalSize += objMB->GetPhysicalSize();
     }
   }
 
   std::cout << totalPhysicalSize << ","
-            << statLabelMap->GetNumberOfLabelObjects()-1 << std::endl;
+            << statLabelMap->GetNumberOfLabelObjects() << std::endl;
 
   if (!output.empty())
   {
