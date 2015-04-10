@@ -24,13 +24,26 @@ target_link_libraries(TwoSampleKolmogorovSmirnovTest ${ITK_LIBRARIES})
 add_executable(OneSampleKolmogorovSmirnovTest OneSampleKolmogorovSmirnovTest.cxx)
 target_link_libraries(OneSampleKolmogorovSmirnovTest ${ITK_LIBRARIES})
 
+add_executable(StatisticTest StatisticTest.cxx)
+target_link_libraries(StatisticTest ${ITK_LIBRARIES})
+
+install(TARGETS StatisticTest TwoSampleKolmogorovSmirnovTest OneSampleKolmogorovSmirnovTest EvidentNormal
+        DESTINATION bin)
+
+
 # Inhomogeneity correction
 add_executable(inhomogeneity inhomogeneity.cxx)
 target_link_libraries(inhomogeneity ${ITK_LIBRARIES})
 
+install(TARGETS inhomogeneity
+        DESTINATION bin)
+
 # Brain extraction
 add_executable(brainExtraction brainExtraction.cxx)
 target_link_libraries(brainExtraction ${ITK_LIBRARIES})
+
+install(TARGETS brainExtraction
+        DESTINATION bin)
 
 # Brain tissue segmentation tools
 add_executable(TissueTypeSegmentation TissueTypeSegmentation.cxx)
@@ -48,6 +61,8 @@ target_link_libraries(refineBTS ${ITK_LIBRARIES})
 add_executable(CorrectGrayMatterFalsePositive CorrectGrayMatterFalsePositive.cxx)
 target_link_libraries(CorrectGrayMatterFalsePositive ${ITK_LIBRARIES})
 
+install(TARGETS TissueTypeSegmentation extractCSF separateWG refineBTS CorrectGrayMatterFalsePositive
+        DESTINATION bin)
 
 # Reporting
 add_executable(atlas atlas.cxx)
@@ -65,15 +80,35 @@ target_link_libraries(CleanMap ${ITK_LIBRARIES})
 add_executable(Labeler Labeler.cxx)
 target_link_libraries(Labeler ${ITK_LIBRARIES})
 
-# Utilities
-add_executable(LabelImageOpening LabelImageOpening.cxx)
-target_link_libraries(LabelImageOpening ${ITK_LIBRARIES})
+install(TARGETS Labeler CleanMap ReportFeature ReportMap atlas
+        DESTINATION bin)
 
+# Registration
+add_executable(linRegister linRegister.cxx)
+target_link_libraries(linRegister ${ITK_LIBRARIES})
+
+add_executable(resample resample.cxx)
+target_link_libraries(resample ${ITK_LIBRARIES})
+
+add_executable(resampleVector resampleVector.cxx)
+target_link_libraries(resampleVector ${ITK_LIBRARIES})
+
+install(TARGETS linRegister resample resampleVector
+        DESTINATION bin)
+
+# Reading Images
 add_executable(ImportImage ImportImage.cxx)
 target_link_libraries(ImportImage ${ITK_LIBRARIES})
 
 add_executable(DICOMReader DICOMReader.cxx)
 target_link_libraries(DICOMReader ${ITK_LIBRARIES})
+
+install(TARGETS DICOMReader ImportImage
+        DESTINATION bin)
+
+# Utilities
+add_executable(LabelImageOpening LabelImageOpening.cxx)
+target_link_libraries(LabelImageOpening ${ITK_LIBRARIES})
 
 add_executable(confusion confusion.cxx)
 target_link_libraries(confusion ${ITK_LIBRARIES})
@@ -84,25 +119,14 @@ target_link_libraries(relabel ${ITK_LIBRARIES})
 add_executable(ComposeToVector ComposeToVector.cxx)
 target_link_libraries(ComposeToVector ${ITK_LIBRARIES})
 
-add_executable(linRegister linRegister.cxx)
-target_link_libraries(linRegister ${ITK_LIBRARIES})
-
-add_executable(resample resample.cxx)
-target_link_libraries(resample ${ITK_LIBRARIES})
-
-add_executable(resampleVector resampleVector.cxx)
-target_link_libraries(resampleVector ${ITK_LIBRARIES})
-
 add_executable(CollapseModel CollapseModel.cxx)
 target_link_libraries(CollapseModel ${ITK_LIBRARIES})
 
-add_executable(StatisticTest StatisticTest.cxx)
-target_link_libraries(StatisticTest ${ITK_LIBRARIES})
-
-
-install(TARGETS CleanMap StatisticTest ImportImage DICOMReader EvidentNormal TwoSampleKolmogorovSmirnovTest OneSampleKolmogorovSmirnovTest inhomogeneity brainExtraction TissueTypeSegmentation extractCSF separateWG refineBTS atlas ReportMap confusion relabel ComposeToVector linRegister resample resampleVector
+install(TARGETS CollapseModel ComposeToVector relabel confusion LabelImageOpening
         DESTINATION bin)
-        
+
+
+# Install scripts        
 install(DIRECTORY Shell
 		DESTINATION bin
 		PATTERN "*.sh"
@@ -110,13 +134,13 @@ install(DIRECTORY Shell
                     GROUP_EXECUTE GROUP_READ
                     WORLD_EXECUTE WORLD_READ)
 
-install(DIRECTORY python
-		DESTINATION bin
-		PATTERN ".pyc" EXCLUDE
-		PATTERN "Cascade*.py"
-        PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-                    GROUP_EXECUTE GROUP_READ
-                    WORLD_EXECUTE WORLD_READ)
+# install(DIRECTORY python
+#		DESTINATION bin
+#		PATTERN ".pyc" EXCLUDE
+#		PATTERN "Cascade*.py"
+#        PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+#                    GROUP_EXECUTE GROUP_READ
+#                    WORLD_EXECUTE WORLD_READ)
 		
 install(DIRECTORY ../data
 		DESTINATION share )
