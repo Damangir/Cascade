@@ -4,4 +4,21 @@
 White matter changes (WMC) are radiological findings, which are classically defined as areas with relatively high signal intensities on T2-weighted images and low intensities on T1-weighted images. The presence and spatial patterns of WMC on MRI and the appearance of these changes are possible key components for studying this pathology and for prospective clinical practice (diagnosis, follow progression, monitor treatments).
 
 Although these changes are visually appreciable there is no concrete definition and no ground truth is available, which makes segmentation and measurement a daunting task. Although many automatic methods have been proposed in the last 15 years, no single method is widely employed \cite{GarciaReview}. Table \ref{Table:Requirements} presents the desirable characteristics of an algorithm to be widely used.
+
+\begin{table} 
+    \begin{tabular}{ c }
+        No manual editing \\ 
+        Input – any of conventional MRI sequences \\ 
+        Results independent of scanning acquisition parameters \\ 
+        Should handle diffuse dirty white matter \\ 
+        Should handle partial volumes \\ 
+        Usable for multi-center datasets \\ 
+    \end{tabular} 
+    \caption{Desirable features for a white matter change segmentation algorithm } 
+    \label{Table:Requirements}
+\end{table}
+    
+    
+
+    
     
