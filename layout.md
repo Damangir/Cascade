@@ -6,7 +6,7 @@ Recently_we_have_developed_a__.tex
 The_aim_of_this_study__.tex
 The_method_was_tested_given__.tex
 section_Materials_and_Methods__.tex
-subsection_Subjects_MRI_scans_of__.tex
+MRI_scans_of_119_subjects__.tex
 subsection_Image_processing__.tex
 subsubsection_WMC_definition_The_common__.tex
 subsubsection_Modeling_Normal_Brain_Expected__.tex
