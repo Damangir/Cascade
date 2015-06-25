@@ -1,5 +1,4 @@
 untitled.tex
-The_method_was_tested_given__.tex
 section_Materials_and_Methods__.tex
 subsection_Subjects__.tex
 MRI_scans_of_119_subjects__.tex
