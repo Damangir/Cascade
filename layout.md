@@ -1,5 +1,4 @@
 untitled.tex
-Recently_we_have_developed_a__.tex
 The_aim_of_this_study__.tex
 The_method_was_tested_given__.tex
 section_Materials_and_Methods__.tex
