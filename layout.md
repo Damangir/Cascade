@@ -9,3 +9,4 @@ section_Materials_and_Methods__.tex
 subsection_Subjects_MRI_scans_of__.tex
 subsection_Image_processing__.tex
 subsubsection_WMC_definition_The_common__.tex
+subsubsection_Modeling_Normal_Brain_Expected__.tex
