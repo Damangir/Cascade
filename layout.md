@@ -7,3 +7,4 @@ The_aim_of_this_study__.tex
 The_method_was_tested_given__.tex
 section_Materials_and_Methods__.tex
 subsection_Subjects_MRI_scans_of__.tex
+subsection_Image_processing__.tex
