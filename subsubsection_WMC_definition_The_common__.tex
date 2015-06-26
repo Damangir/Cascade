@@ -6,22 +6,18 @@ We incorporated the common definition of WMC in a definition as a concrete stati
 It is important to recognize that our statistical definition differs from learning methods and outlier detection method, where statistical features of manual delineated WMC is captured in either supervised or unsupervised way.
 On the other hand we define WMC and show segmentation based on it corresponds to those based on current accepted definition.
 \par
-The proposed definition depends on calculating expected normal local histogram. In the present paper expected local histograms of normal brains are calculated for each voxel as the average of local histogram of evidently normal voxels in the same subject. Evidently normal voxels are calculated in two thresholding steps:
+The proposed definition depends on calculating expected normal local histogram. In the present paper expected local histograms of normal brain are calculated for each voxel as the average of local histogram of evidently normal voxels in the same subject. Evidently normal voxels are calculated in two thresholding steps:
+\par
 \begin{enumerate}
 \item Heuristic thresholding is used to capture the bottom percentile (hypo-intense area) of voxels for FLAIR (45\%), T2 (50\%) and PD (65\%) and the upper percentile (hyper-intense area) of voxels for T1 (15\%). The thresholding performed in 1mm, 2mm and 3mm spatial scales. This step should generally be expected to capture the majority of non-WMC voxels (results in step 1 in figure 2).
 \item Calculated thresholding is calculated as the optimal threshold \cite{ReduceSVM} to replicate the masks created for all mask at all steps in the previous step.
 \end{enumerate}
+\par
 Voxels captured with all mentioned thresholding will be considered as evidently normal brain mask. Proper closing morphological filter is then used to include small holes and missing voxels in the evidently normal brain before using the mask in the WMC definition. Proper opening is defined as $ Min(mask,O( C( O( mask )))  ) $ where $ C $ and $ O $ are morphological closing and opening with two-millimeter spherical structuring element (results in step 2 in figure 2).
-
     
     
     
-    
-    
-    
-    
-    
-    
+  
   
   
   
