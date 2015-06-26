@@ -6,10 +6,14 @@ We incorporated the common definition of WMC in a definition as a concrete stati
 It is important to recognize that our statistical definition differs from learning methods and outlier detection method, where statistical features of manual delineated WMC is captured in either supervised or unsupervised way.
 On the other hand we define WMC and show segmentation based on it corresponds to those based on current accepted definition.
 \par
-The proposed definition depends on calculating expected normal local histogram. In the present paper expected local histograms of normal brains are calculated for each voxel as the average of local histogram of evidently normal voxels in the same subject. Evidently normal voxels are 
+The proposed definition depends on calculating expected normal local histogram. In the present paper expected local histograms of normal brains are calculated for each voxel as the average of local histogram of evidently normal voxels in the same subject. Evidently normal voxels are calculated in two thresholding steps:
+\begin{enumerate}
+\item First heuristic thresholding is used to capture the bottom percentile (hypo-intense area) of voxels for FLAIR (45\%), T2 (50\%) and PD (65\%) and the upper percentile (hyper-intense area) of voxels for T1 (15\%). The thresholding performed in 1mm, 2mm and 3mm spatial scales. This step should generally be expected to capture the majority of non-WMC voxels (result in step 1 in figure 2).
+\item Second the threshold is calculated  \cite{ReduceSVM} at each voxel.
+\end{enumerate}
 
-\par
-Non-WMC voxels are used to create a one-class single-node support vector machine \cite{ReduceSVM,CascadeOrig} at each voxel. This model will be used in removing evident normal brain.
+Proper opening morphological filter is then used to remove very small and unlikely detections. Proper opening is defined as $$Min(mask,C( O( C( mask )))  )$$ where C and O are morphological closing and opening. Two-millimeter spherical structuring element has been used for morphological operation. Spatial filters remove voxels in grey matter, cerebrospinal fluid and non-brain tissues (result in step 2 in figure 2).
+
     
     
     
@@ -19,4 +23,5 @@ Non-WMC voxels are used to create a one-class single-node support vector machine
     
     
     
+  
   
