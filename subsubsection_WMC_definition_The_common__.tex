@@ -11,9 +11,8 @@ The proposed definition depends on calculating expected normal local histogram. 
 \item Heuristic thresholding is used to capture the bottom percentile (hypo-intense area) of voxels for FLAIR (45\%), T2 (50\%) and PD (65\%) and the upper percentile (hyper-intense area) of voxels for T1 (15\%). The thresholding performed in 1mm, 2mm and 3mm spatial scales. This step should generally be expected to capture the majority of non-WMC voxels (results in step 1 in figure 2).
 \item Calculated thresholding is calculated as the optimal threshold \cite{ReduceSVM} to replicate the masks created for all mask at all steps in the previous step.
 \end{enumerate}
+Voxels captured with all mentioned thresholding will be considered as evidently normal brain mask. Proper closing morphological filter is then used to include small holes and missing voxels in the evidently normal brain before using the mask in the WMC definition. Proper opening is defined as $ Min(mask,O( C( O( mask )))  ) $ where $ C $ and $ O $ are morphological closing and opening with two-millimeter spherical structuring element (results in step 2 in figure 2).
 
-Proper closing morphological filter is then used to include small holes and missing voxels in the evidently normal brain. Proper opening is defined as $ Min(mask,O( C( O( mask )))  ) $ where $ C $ and $ O $ are morphological closing and opening with two-millimeter spherical structuring element (results in step 2 in figure 2).
-
     
     
     
@@ -23,6 +22,7 @@ Proper closing morphological filter is then used to include small holes and miss
     
     
     
+  
   
   
   
