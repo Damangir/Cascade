@@ -6,7 +6,13 @@ The output of preprocessing is co-registered and inhomogeneity corrected images 
 \item Skull stripping: MNI brain mask is registered to native space. The registered brain mask is eroded with a 5mm spherical structuring element and the eroded mask is extended using a region-growing algorithm.
 \item Inhomogeneity correction performed on all registered input images using N3 algorithm \cite{N3}
 \item Brain tissue segmentation using Bayesian inference
+\begin{itemize}
+    \item Prior probability distribution is estimated by registering the average MNI tissue maps to the native space. Tissue model is the marginal probability distribution of intensities of the 3 tissue types, which is calculated by using the algorithm described in \cite{EM_Empirical}. Initial brain tissue segmentation is performed using the tissue model and prior probabilities
+    \item Updating the initial tissue segmentation using a new tissue probability model at each voxel which is the relative frequency of each tissue type in adjacent voxels in a sphere of radius 1mm
+    \item Removing potential WMC that was classified as GM: GM voxels that are bright on T2 images (>85\% of GM) or FLAIR image (>90\% of GM) are labeled as suspect voxels. Suspected voxels surrounded by mostly WM will be labeled as WM and voxels surrounded by mostly GM will be labeled back to GM
+\end{itemize}
 \end{enumerate}
+  
   
   
   
