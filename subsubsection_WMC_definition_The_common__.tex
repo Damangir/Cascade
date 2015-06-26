@@ -12,7 +12,7 @@ The proposed definition depends on calculating expected normal local histogram. 
 \item Second the threshold is calculated  \cite{ReduceSVM} at each voxel.
 \end{enumerate}
 
-Proper opening morphological filter is then used to remove very small and unlikely detections. Proper opening is defined as $$Min(mask,C( O( C( mask )))  )$$ where C and O are morphological closing and opening. Two-millimeter spherical structuring element has been used for morphological operation. Spatial filters remove voxels in grey matter, cerebrospinal fluid and non-brain tissues (result in step 2 in figure 2).
+Proper closing morphological filter is then used to include small holes and missing voxels in the evidently normal brain. Proper opening is defined as $ Min(mask,O( C( O( mask )))  ) $ where C and O are morphological closing and opening. Two-millimeter spherical structuring element has been used for morphological operation. Spatial filters remove voxels in grey matter, cerebrospinal fluid and non-brain tissues (result in step 2 in figure 2).
 
     
     
@@ -23,5 +23,6 @@ Proper opening morphological filter is then used to remove very small and unlike
     
     
     
+  
   
   
