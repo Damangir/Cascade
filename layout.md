@@ -5,5 +5,5 @@ MRI_scans_of_119_subjects__.tex
 subsection_WMC_definition_The_common__.tex
 subsection_Image_processing__.tex
 subsubsection_Calculating_Evident_Normal_Brain__.tex
-renewcommand_labelenumii_theenumii_renewcommand_theenumii__.tex
+subsubsection_Preprocessing_The_output_of__.tex
     
