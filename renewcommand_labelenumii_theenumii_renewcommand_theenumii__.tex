@@ -1,6 +1,3 @@
-\renewcommand{\labelenumii}{\theenumii}
-\renewcommand{\theenumii}{\theenumi.\arabic{enumii}.}
-
 \subsubsection{Preprocessing}
 The output of preprocessing is co-registered and inhomogeneity corrected images and brain tissues segmentation. The following enumerates preprocessing steps:
 \begin{enumerate}
@@ -14,4 +11,5 @@ The output of preprocessing is co-registered and inhomogeneity corrected images 
     \item Relabeling WMC that was classified as GM. GM voxels that are bright on T2 images (intensity >85 percentile of GM) are labeled as suspect voxels, which are relabeled according to the tissue type of the majority of the neighboring voxels in an iterative process. Voxels surrounded by mostly WM will be labeled as WM and voxels surrounded by mostly GM will be labeled back to GM.
     \end{enumerate}
 \end{enumerate}
+  
   
