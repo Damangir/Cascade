@@ -1,9 +1,0 @@
-\subsubsection{Modeling Normal Brain}
-
-Expected local histograms of normal brains are calculated for each voxel in MNI space using the non-WMC voxels. Non-WMC voxels are determined using heuristic thresholding (see 2.2.4). Each image will be transformed into the MNI space. Local histograms from a sphere of radius 1mm are calculated for all subjects at each non-WMC voxel. The expected local histogram for each voxel is the average of local histogram at that point obtained from each subject.
-\par
-Non-WMC voxels are used to create a one-class single-node support vector machine \cite{ReduceSVM,CascadeOrig} at each voxel. This model will be used in removing evident normal brain.
-    
-    
-    
-  
