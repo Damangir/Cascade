@@ -6,7 +6,7 @@ opt/
 *.pyc
 *_
 .ruffus*
-
+*~
 
 CMakeCache.txt
 CMakeFiles

@@ -19,6 +19,8 @@ BTS_MAP=brain.tissues.nii.gz
 FS_T1_NII=rawavg.nii.gz
 FS_ASEG_NII=aseg.nii.gz
 
+VOLBRAIN_T1_NII=volbrain.t1.nii.gz
+
 for IMG in T1 FLAIR T2 PD
 do
 IMG_U=$( tr '[:lower:]' '[:upper:]' <<<$IMG )

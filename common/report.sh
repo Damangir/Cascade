@@ -58,29 +58,29 @@ BIN_IMG_TRIM="${OUTPUT_DIR}/wml_mask_${MINT}_${MAXT}_${MINS}mm3_${WMLP}p_${COVER
 
 if [ "${USER_THRESHOLD}" ]
 then
-fslmaths "${FLAIR}" -thr "${USER_THRESHOLD}" -bin -mul "${PVALUE}" "${PVALUE1}"
+"${FSLPRE}fslmaths" "${FLAIR}" -thr "${USER_THRESHOLD}" -bin -mul "${PVALUE}" "${PVALUE1}"
 else
 cp "${PVALUE}" "${PVALUE1}"
 fi
 
 "${CASCADE_BIN}/ReportMap" --min-size ${MINS} --threshold ${MINT} --max-threshold ${MAXT} --binary-seg "${BIN_IMG}" "${PVALUE1}" &>/dev/null
 
-THR=$(fslstats "${FLAIR}" -k "${BIN_IMG}" -P ${WMLP})
+THR=$("${FSLPRE}fslstats" "${FLAIR}" -k "${BIN_IMG}" -P ${WMLP})
 
 if (( $(bc -l <<< "$THR > 0 ") ))
 then
-fslmaths "${FLAIR}" -thr ${THR} -mul "${EVIDENT}" -bin -max "${PVALUE1}" "${PVALUE1}"
+"${FSLPRE}fslmaths" "${FLAIR}" -thr ${THR} -mul "${EVIDENT}" -bin -max "${PVALUE1}" "${PVALUE1}"
 VOLS=$("${CASCADE_BIN}/ReportMap" --min-size ${MINS} --threshold ${MINT} --max-threshold ${MAXT} --binary-seg "${BIN_IMG}" "${PVALUE1}")
 else
-fslmaths ${BIN_IMG} -mul 0 ${BIN_IMG}
+"${FSLPRE}fslmaths" ${BIN_IMG} -mul 0 ${BIN_IMG}
 VOLS=0,0
 fi
 
 
 if [ "${COVERAGE}" ]
 then
-fslmaths ${BTS} -thr 2 -uthr 2 -bin ${TOUCH_MASK}
-fslmaths ${BTS} -binv -add ${TOUCH_MASK} ${TOUCH_MASK}
+"${FSLPRE}fslmaths" ${BTS} -thr 2 -uthr 2 -bin ${TOUCH_MASK}
+"${FSLPRE}fslmaths" ${BTS} -binv -add ${TOUCH_MASK} ${TOUCH_MASK}
 VOLS=$("${CASCADE_BIN}/CleanMap" --input-seg ${BIN_IMG} --mask  ${TOUCH_MASK} --radius ${COVERAGE_RAD} --overlap-thresh  ${COVERAGE} --output-seg  ${BIN_IMG_TRIM} --verbose )
 fi
 
