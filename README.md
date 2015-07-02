@@ -1,7 +1,7 @@
 Cascade: Reproducible Segmentation of White Matter Changes using Strict Statistical Definition
 =======
 
-__This is the Cascade, academic version. Cascade-academic depends on **FSL maths** so you need acknowledge FSL terms of use before using this software.__
+__This is the Cascade, academic version. Cascade-academic depends on **FSL** so you need acknowledge FSL terms of use before using this software.__
 
 
 Content
@@ -28,30 +28,48 @@ In order to install the software you need to have the following application inst
  * cmake 2.8+ (cmake.org)
  * Insight Toolkit 4.0+ (itk.org)
 
-For the automation scripts you may use:
- * Python 2.7+
+For the script generator and premade scripts you may use:
+ * Bash 3+
 
 You can check availability of these packages on your computer (on Unix-like computers e.g. Mac and Ubuntu). Please note the last command might take a few minutes to run.
 ```bash
 ~$ echo -ne "C++ compiler: "; command -v cc||  command -v gcc||  command -v clang||  command -v c++||  echo "No C++ compiler found"
 ~$ make --version
 ~$ cmake --version
-~$ python --version
+~$ bash --version
 ~$ find / -name "ITKConfigVersion.cmake" -print -exec head -n1 {} \; 2>/dev/null
 ```
 
 Once you obtain the Cascade, you can install it via:
 ```bash
 ~$ cd Cascade
-Cascade$ ls
-README.md   copyright.txt   data   license.png   license.txt   src
 Cascade$ mkdir build
 Cascade$ cd build
 build$ cmake ../src
 build$ make
-build$ python ../src/python/Cascade.py -h
 ```
 
+Before using the scripts you should export some envirnment variables:
+```bash
+export CASCADE_BIN=Cascade/build
+export CASCADE_DATA=Cascade/data
+```
+
+You can use script generators located at src/Shell to generate scripts for your studies. There are some ready to use scripts which can import the results of [freesurfer](http://surfer.nmr.mgh.harvard.edu/) or [volbrain](http://volbrain.upv.es/) and runs the Cascade based on their results. It is recommended to import the results of your GM analysis if you have any in your studies. Otherwise use the script generator to generate a script which handles GM analysis internally.
+
+An example usage of the softwares are:
+
+```bash
+$ RADIUS=1.5 FREESURFER_DIR=/path/to/FS_Subject FLAIR=/path/to/FLAIR OUTPUT_DIR=/path/to/cascade/output  modelfree.freesurfer.sh
+```
+
+or
+
+```bash
+$ RADIUS=1.5 VOLBRAIN_DIR=/path/to/volbrain_Subject FLAIR=/path/to/FLAIR OUTPUT_DIR=/path/to/cascade/output  modelfree.volbrain.sh
+```
+
+These scripts will generate a p-value mape ( 1-pvalue ) for being WML. You can use report script should you need to convert it to binary mask.
 
 Citation
 -------
