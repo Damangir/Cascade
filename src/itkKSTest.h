@@ -120,8 +120,13 @@ public:
     {
       return dn;
     }
-
-    return vcl_max(dn, dp);
+    
+    if (this->GetTwoTail())
+    {
+      return vcl_max(dn, dp);
+    }
+    
+    itkExceptionMacro ("No direction set for the test.");
   }
 
   itkGetConstMacro(SortedFirst, bool);

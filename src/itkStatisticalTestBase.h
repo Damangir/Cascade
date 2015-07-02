@@ -33,8 +33,8 @@ public:
 
   virtual TRealValueType Evaluate(const SampleType1 * x1, const SampleType2 * x2) const = 0;
 
-  itkGetConstMacro(OneTail, bool);
-  itkBooleanMacro (OneTail);
+  itkGetConstMacro(TwoTail, bool);
+  itkBooleanMacro (TwoTail);
 
   itkGetConstMacro(RightTail, bool);
   itkBooleanMacro (RightTail);
@@ -42,15 +42,15 @@ public:
   itkGetConstMacro(LeftTail, bool);
   itkBooleanMacro (LeftTail);
 
-  virtual void SetOneTail(const bool _arg)
+  virtual void SetTwoTail(const bool _arg)
   {
     itkDebugMacro("setting OneTail to " << _arg);
-    if (this->m_OneTail != _arg)
+    if (this->m_TwoTail != _arg)
     {
-      this->m_OneTail = _arg;
+      this->m_TwoTail = _arg;
       this->Modified();
     }
-    if (this->GetOneTail())
+    if (this->GetTwoTail())
     {
       this->SetLeftTail(false);
       this->SetRightTail(false);
@@ -67,7 +67,7 @@ public:
     if (this->GetRightTail())
     {
       this->SetLeftTail(false);
-      this->SetOneTail(false);
+      this->SetTwoTail(false);
     }
   }
   virtual void SetLeftTail(const bool _arg)
@@ -81,13 +81,13 @@ public:
     if (this->GetLeftTail())
     {
       this->SetRightTail(false);
-      this->SetOneTail(false);
+      this->SetTwoTail(false);
     }
   }
 
 protected:
   StatisticalTestBase(){
-    m_OneTail = false;
+    m_TwoTail = true;
     m_RightTail = false;
     m_LeftTail = false;
   }
@@ -97,7 +97,7 @@ protected:
   void PrintSelf(std::ostream & os, Indent indent) const
   {
     Superclass::PrintSelf(os, indent);
-    os << indent << "One tail test: " << (m_OneTail ? "Yes" : "No")
+    os << indent << "Two tail test: " << (m_TwoTail ? "Yes" : "No")
        << std::endl;
     os << indent << "Right tail test: " << (m_RightTail ? "Yes" : "No")
        << std::endl;
@@ -107,7 +107,7 @@ protected:
 
 
 private:
-  bool m_OneTail;
+  bool m_TwoTail;
   bool m_RightTail;
   bool m_LeftTail;
 };

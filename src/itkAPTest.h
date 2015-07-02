@@ -103,10 +103,15 @@ public:
 
     if (this->GetLeftTail())
     {
-      return vcl_max(TRealValueType(0), p/pr);
+      return vcl_max(TRealValueType(0), (pr-p)/pr);
     }
 
-    return vcl_max(p/pr, (p-pr)/(1-pr));
+    if (this->GetTwoTail())
+    {
+      return vcl_max((pr-p)/pr, (p-pr)/(1-pr));
+    }
+
+    itkExceptionMacro ("No direction set for the test.");
   }
 
   itkGetConstMacro(SortedFirst, bool);
