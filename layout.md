@@ -1,5 +1,5 @@
 section_Introduction_label_intro_White__.tex
-section_Materials_and_Methods__.tex
+section_Materials_and_Methods_label__.tex
 subsection_Subjects__.tex
 MRI_scans_of_119_subjects__.tex
 subsection_WMC_definition_The_common__.tex
