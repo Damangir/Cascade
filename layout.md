@@ -1,7 +1,6 @@
 Introduction.tex
 Materials_and_Methods.tex
 Subjects.tex
-MRI_scans_of_119_subjects__.tex
 subsection_WMC_definition_label_definition__.tex
 subsection_Image_processing__.tex
 subsubsection_Calculating_Evident_Normal_Brain__.tex
