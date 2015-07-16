@@ -1,6 +1,6 @@
 Introduction.tex
 Materials_and_Methods.tex
-subsection_Subjects_label_subjects__.tex
+Subjects.tex
 MRI_scans_of_119_subjects__.tex
 subsection_WMC_definition_label_definition__.tex
 subsection_Image_processing__.tex
