@@ -1,3 +1,4 @@
+abstract_Hello_this_is_abstract__.tex
 Introduction.tex
 Materials_and_Methods.tex
 Subjects.tex
@@ -5,5 +6,5 @@ WMC definition.tex
 subsection_Image_processing__.tex
 subsubsection_Calculating_Evident_Normal_Brain__.tex
 subsubsection_Preprocessing_The_output_of__.tex
-abstract_Hello_this_is_abstract__.tex
     
+  
