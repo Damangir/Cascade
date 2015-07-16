@@ -6,4 +6,5 @@ subsection_WMC_definition_label_definition__.tex
 subsection_Image_processing__.tex
 subsubsection_Calculating_Evident_Normal_Brain__.tex
 subsubsection_Preprocessing_The_output_of__.tex
+figures/damangir_transcript001/damangir_transcript001.jpg
     
