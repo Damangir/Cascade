@@ -4,7 +4,7 @@ Materials_and_Methods.tex
 Subjects.tex
 WMC definition.tex
 subsection_Image_processing__.tex
-subsubsection_Calculating_Evident_Normal_Brain__.tex
+Calculating_Evident_Normal_Brain.tex
 subsubsection_Preprocessing_The_output_of__.tex
     
   
