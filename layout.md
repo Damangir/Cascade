@@ -5,6 +5,6 @@ Subjects.tex
 WMC definition.tex
 subsection_Image_processing__.tex
 Calculating_Evident_Normal_Brain.tex
-subsubsection_Preprocessing_The_output_of__.tex
+Preprocessing.tex
     
   
