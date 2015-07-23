@@ -3,7 +3,7 @@
 
 White matter changes (WMC) are radiological findings, which are classically defined as areas with relatively high signal intensities on T2-weighted images and low intensities on T1-weighted images. The presence and spatial patterns of WMC on MRI and the appearance of these changes are possible key components for studying this pathology and for prospective clinical practice (diagnosis, follow progression, monitor treatments).
 
-Although these changes are visually appreciable there is neither a concrete definition nor a ground truth is available, which makes segmentation and measurement a daunting task. Although many automatic methods have been proposed in the last 15 years; no single method is widely employed, nor satisfies all desirable characteristics of being widely used. \cite{GarciaReview}. Table \ref{Table:Requirements} presents the desirable characteristics of an algorithm to be widely used.
+Although these changes are visually appreciable there is neither a concrete definition nor a ground truth is available, which makes segmentation and measurement a daunting task. Although many automatic methods have been proposed in the last 15 years; no single method is widely employed, nor satisfies all desirable characteristics of being widely used \cite{GarciaReview}. Table \ref{Table:Requirements} presents the desirable characteristics of an algorithm to be widely used.
 
 \begin{table}
 \centering
@@ -21,7 +21,7 @@ Although these changes are visually appreciable there is neither a concrete defi
     \label{Table:Requirements}
 \end{table}
     
-We believe failing to address all these specification rooted in the fact that the problem of segmenting WMC as viewed today is a \textit{ill-posed} problem\cite{IllPosed}; meaning it does not have a unique solution. In other words, there is no single WMC segmentation for a given brain scan that everyone agrees on. This characteristic is unique to WCM segmentation when compared to other segmentation questions like whole brain or similar segmentations; that is why there are widely used and accepted methods for those questions.
+We believe failing to address all these specification rooted in the fact that the problem of segmenting WMC as viewed today is a \textit{ill-posed} problem \cite{IllPosed}; meaning it does not have a unique solution. In other words, there is no single WMC segmentation for a given brain scan that everyone agrees on. This characteristic is unique to WCM segmentation when compared to other segmentation questions like whole brain or similar segmentations; that is why there are widely used and accepted methods for those questions.
 
 To our knowledge, previously presented methods have used machine learning (supervised or unsupervised) in order to produce a segmentation as close to manual WMC segmentation as possible. Since those method are aiming at an undefined and moving target (i.e. the problem is \textit{ill-posed}) they were not be able to be reliable enough. It does not mean that those methods are not producing segmentation close to manual segmentations, rather it suggests that those methods need to be optimized for each particular research. We thus believe that although this approach can be and has been useful in some scenarios, it can not lead to a general solution. On the other hand, if the problem had been \textit{well-posed}, then it could stand be a foundation of a solution on a computer using a stable algorithm
 
@@ -32,6 +32,7 @@ he aim of this study is to create a robust method having as many characteristics
 The method was tested given any combinations of available sequences (T1-weighted, T2-weighted, FLAIR and PD) and validated against manual delineation, which is considered as the golden standard. The results of different combinations are also cross-validated against one another to assess the expected robustness of the method in order to assure usability for analyzing multi-center datasets.
     
     
+  
   
   
   
