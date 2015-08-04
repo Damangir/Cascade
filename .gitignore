@@ -1,0 +1,15 @@
+build/
+opt/
+*/test/
+.project
+.DS_Store
+*.pyc
+*_
+.ruffus*
+*~
+
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
