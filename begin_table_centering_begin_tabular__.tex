@@ -1,20 +1,23 @@
 \begin{table}
 \centering
     \begin{tabular}  {  r | c c c c c c c }
-         & ANN  & Clustering  & OD  & SVM  & OD and RG  & kNN & SSS \\
          & \cite{Zijdenbos_2002} & \cite{LesionTOADS_2010} & \cite{OutlierLocalIntensity_2011} & \cite{CascadeOrig} & \cite{LesionSegmentationToolbox_2012} & \cite{kNN-TTPs_2013} & \cite{Rotation-invariant_2015} \\
+                                                     & ANN      &Clustering&   OD     &   SVM    & OD and R & kNN      & SSS \\
     \hline %  
-        No manual editing                                      & \cmark & yes & yes & yes & yes & yes & yes \\ 
-        Input – any of conventional MRI sequences              & yes & yes & yes & yes & yes & yes & yes \\ 
-        Results independent of scanning acquisition parameters & yes & yes & yes & yes & yes & yes & yes \\ 
-        Should handle diffuse dirty white matter               & yes & yes & yes & yes & yes & yes & yes \\ 
-        Should handle partial volumes                          & yes & yes & yes & yes & yes & yes & yes \\ 
-        Usable for multi-center datasets                       & yes & yes & yes & yes & yes & yes & yes \\ 
+        No manual editing                            &\times    &\checkmark&\checkmark&\times    &\checkmark&\times    &   ?  \\ 
+        Input – any of conventional MRI sequences    &\times    &\times    & claimed  & claimed  &\times    &\times    &   ?  \\ 
+        Independent of acquisition parameters        & claimed  &\checkmark&\checkmark& claimed  &\checkmark&\checkmark&   ?  \\ 
+        Should handle diffuse dirty white matter     &\times    &\times    &\times    &\times    &\times    &\times    & \times   \\ 
+        Should handle partial volumes                &\times    &\times    &\times    & claimed  &\times    &\times    &   ?  \\ 
+        Usable for multi-center datasets             & claimed  &\times    &\times    &\times    &\times    &\times    &   ?  \\ 
+    \hline
+        Quality (Self reported)                      & good     & good     &  good    &  excellent & excellent & excellent &   ?  \\ 
     \hline
     \end{tabular} 
     \caption{Desirable features for a white matter change segmentation algorithm and their availability in different methods. ANN: Arteficial neural network, OD: Outlier detection, SVM: Support vector machines, RG: Region growing, kNN: k-Nearest Neighbors algorithm} 
     \label{Table:Other_Methods}
 \end{table}
+  
   
   
   
