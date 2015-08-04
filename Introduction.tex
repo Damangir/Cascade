@@ -21,11 +21,7 @@ Although these changes are visually appreciable there is neither a concrete defi
     \label{Table:Requirements}
 \end{table}
     
-
-
-We believe failing to address these specification rooted in the fact that the problem of segmenting WMC as viewed today is an \textit{ill-posed} problem \cite{IllPosed}; meaning it does not have a unique solution. In other words, there is no single WMC segmentation for a given brain scan that everyone agrees on. This characteristic is unique to WMC segmentation when compared to other segmentation questions like whole brain or similar segmentations; that is why there are widely used and accepted methods for those questions.
-
-To our knowledge, previously presented methods have used machine learning (supervised or unsupervised) in order to produce a segmentation as close to manual WMC segmentation as possible. Since those method are aiming at an undefined and moving target (i.e. the problem is \textit{ill-posed}) they were not able to be reliable enough. It does not mean that those methods are not producing segmentation close to manual segmentations, rather it suggests that those methods need to be optimized for each particular research. We thus believe that although this approach can be and has been useful in some scenarios, it can not lead to a general solution. On the other hand, if the problem had been \textit{well-posed}, it could have stood a foundation for a stable computer solution.
+We believe failing to address these specification rooted in the fact that the problem of segmenting WMC as viewed today is an \textit{ill-posed} problem \cite{IllPosed}; meaning it does not have a unique solution. In other words, there is no single WMC segmentation for a given brain scan that everyone agrees on. This characteristic is unique to WMC segmentation when compared to other segmentation questions like whole brain or similar segmentations; that is why there are widely used and accepted methods for those questions. Previously presented methods have used machine learning (supervised or unsupervised) in order to produce a segmentation as close to manual WMC delineation as possible. Since those method are aiming at an undefined and moving target (i.e. the problem is \textit{ill-posed}) they were not able to be reliable enough. It does not mean that those methods are not producing segmentation close to manual delineation, rather it suggests that those methods are not generalizable and are only useful for a niche particular research. We thus believe that although the traditional approach can be and has been useful in some scenarios, it can not lead to a general solution. On the other hand, if the problem had been \textit{well-posed}, it could have stood a foundation for a stable computer solution.
 
 In the present work, the problem of WMC segmentation has been reformulated as a \textit{well-posed} problem by proposing a concrete statistical definition for WMC. It then has been shown that the reformulated problem yields results with the same quality as the traditional approach.
 
@@ -35,5 +31,6 @@ Second, it has been shown that the proposed reformulation can be superior in ter
 
 The experiment in this paper uses a dataset with four widely used MRI sequences (T1, T2, FLAIR and PD) and manual WMC delineation. After describing the dataset, the proposed definition of WMC will be presented followed by step-by-step description of all necessary pre-processing and its implementation. Then the experimental setup and its results are presented before discussing the method and implication of the results.
 
+  
   
   
