@@ -27,30 +27,10 @@ We believe failing to address these specification rooted in the fact that the pr
 
 To our knowledge, previously presented methods have used machine learning (supervised or unsupervised) in order to produce a segmentation as close to manual WMC segmentation as possible. Since those method are aiming at an undefined and moving target (i.e. the problem is \textit{ill-posed}) they were not able to be reliable enough. It does not mean that those methods are not producing segmentation close to manual segmentations, rather it suggests that those methods need to be optimized for each particular research. We thus believe that although this approach can be and has been useful in some scenarios, it can not lead to a general solution. On the other hand, if the problem had been \textit{well-posed}, it could have stood a foundation for a stable computer solution.
 
-In the present work, we reformulate the problem of WMC segmentation as a \textit{well-posed} problem and show that the reformulated problem yields the same results as the traditional one. In this way, a concrete statistical definition of WMC is presented and the segmentation is performed based on the statistical definition. In order to assess the validity of the proposed definition, result from proposed statistical definition using all combination input sequences (e.g. FLAIR and T1; T2 and T1; and etc.) have been:
+In the present work, we reformulate the problem of WMC segmentation as a \textit{well-posed} problem and show that the reformulated problem yields the same results as the traditional one. In this way, a concrete statistical definition of WMC is presented and the segmentation is performed based on the statistical definition.
 
-\begin{enumerate}
-\item Compared with manual delineation
-\item Compared with other state-of-the-art methods
-\item Cross-compared to one another (e.g. Results using FLAIR and T1 compared with the one using T2 and T1)
-\end{enumerate}
+First it has been proved that the proposed \textit{well-posed} reformulation address the same question as the traditional approach: This definition has been shown to be aligned with the traditional visual description by comparing the results using all combination of input sequences (e.g. FLAIR and T1; T2 and T1; and etc.) with manual delineation. This definition's results has also been compared with other available state-of-the-art methods to show the proposed statistical definition can be used in place of automatic methods which aim to replicate on traditional visual description of WMC.
 
-In this paper, a dataset with four widely used MRI sequences (T1, T2, FLAIR and PD) and manual WMC delineation has been used. After describing the dataset, the proposed definition of WMC will be presented followed by step-by-step description of all necessary pre-processing and its implementation. Then the experimental setup and its results are presented before discussing the method and implication of the results.
+Second, it has been shown that the proposed reformulation can be superior in terms of reproducibility and usage in multi-center studies. Results using different combination of input sequences cross-compared to one-another (e.g. Results using FLAIR and T1 compared with the one using T2 and T1) to simulate the scenario in which different imaging data protocol used in a multi-center study.
 
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+The experiment in this paper uses a dataset with four widely used MRI sequences (T1, T2, FLAIR and PD) and manual WMC delineation. After describing the dataset, the proposed definition of WMC will be presented followed by step-by-step description of all necessary pre-processing and its implementation. Then the experimental setup and its results are presented before discussing the method and implication of the results.
