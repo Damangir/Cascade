@@ -3,7 +3,7 @@
 
 White matter changes (WMC) are radiological findings, which are classically defined as areas with relatively high signal intensities on T2-weighted images (T2) and low intensities on T1-weighted images (T1). The presence and spatial patterns of WMC on MRI and the appearance of these changes are possible key components for studying this pathology and for prospective clinical practice (diagnosis, follow progression, monitor treatments).
 
-Although these changes are visually appreciable there is neither a concrete definition nor a ground truth is available, which makes segmentation and measurement a daunting task. Although many automatic methods have been proposed in the last 15 years \cite{Kamber_1995} \cite{Udupa_1997} \cite{10695813}\cite{12585710}\cite{19766196}; no single method is widely employed, nor satisfies all desirable characteristics of being widely used \cite{GarciaReview}. Table \ref{Table:Requirements} presents the desirable characteristics of an algorithm to be widely used.
+Although these changes are visually appreciable there is neither a concrete definition nor a ground truth is available, which makes segmentation and measurement a daunting task. Although many automatic methods have been proposed in the last 15 years \cite{Kamber_1995,Udupa_1997,Boudraa2000,Zijdenbos_2002,LesionTOADS_2010,OutlierLocalIntensity_2011,CascadeOrig,LesionSegmentationToolbox_2012,kNN-TTPs_2013,Rotation-invariant_2015}; no single method is widely employed, nor satisfies all desirable characteristics of being widely used \cite{GarciaReview}. Table \ref{Table:Requirements} presents the desirable characteristics of an algorithm to be widely used.
 
 \begin{table}
 \centering
@@ -35,6 +35,7 @@ In the present work, we reformulate the problem of WMC segmentation as a \textit
 
 In this paper, a dataset with four widely used MRI sequences (T1, T2, FLAIR and PD) and manual WMC delineation has been used. After describing the dataset, the proposed definition of WMC will be presented followed by step-by-step description of all necessary pre-processing and its implementation. Then the experimental setup and its results are presented before discussing the method and implication of the results.
 
+  
   
   
   
