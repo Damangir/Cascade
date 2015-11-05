@@ -87,7 +87,7 @@ then
 	echo;echo
 	comment "Begin: Brain extraction on $sequence"
 	BRAIN_MASK=${OUTPUT_DIR}/brain.mask.nii.gz
-	EXEC ${CASCADE_BIN}resample "${T1}" "${MNI_BRAIN_MASK}" "${BRAIN_MASK}" ${invTransferFile}
+	EXEC ${CASCADE_BIN}resample "${T1}" "${MNI_BRAIN_MASK}" "${BRAIN_MASK}" "${OUTPUT_DIR}/${invTransferFile}"
 	EXEC ${CASCADE_BIN}brainExtraction "${T1}" "${BRAIN_MASK}" "${BRAIN_MASK}"
 	comment "End:   Brain extraction on $sequence"
 	
@@ -107,9 +107,9 @@ then
 	PRIOR_GM=${OUTPUT_DIR}${sequence}.$(basename "${PRIOR_GM_MNI}")
 	PRIOR_WM=${OUTPUT_DIR}${sequence}.$(basename "${PRIOR_WM_MNI}")
 	
-	EXEC ${CASCADE_BIN}resample "${image}" "${PRIOR_CSF_MNI}" "${PRIOR_CSF}" ${invTransferFile}
-	EXEC ${CASCADE_BIN}resample "${image}" "${PRIOR_WM_MNI}" "${PRIOR_WM}" ${invTransferFile}
-	EXEC ${CASCADE_BIN}resample "${image}" "${PRIOR_GM_MNI}" "${PRIOR_GM}" ${invTransferFile}
+	EXEC ${CASCADE_BIN}resample "${image}" "${PRIOR_CSF_MNI}" "${PRIOR_CSF}" "${OUTPUT_DIR}/${invTransferFile}"
+	EXEC ${CASCADE_BIN}resample "${image}" "${PRIOR_WM_MNI}" "${PRIOR_WM}" "${OUTPUT_DIR}/${invTransferFile}"
+	EXEC ${CASCADE_BIN}resample "${image}" "${PRIOR_GM_MNI}" "${PRIOR_GM}" "${OUTPUT_DIR}/${invTransferFile}"
 	comment "End:   Resampling brain tissue priors"				
 fi
 
