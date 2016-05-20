@@ -53,7 +53,7 @@ mkdir -p ${OUTPUT_DIR}
 # Begin: Import Freesurfer results                                             #
 ################################################################################
 
-if command -v mri_convert &>dev/null
+if command -v mri_convert &>/dev/null
 then
 mri_convert "${FS_RAWAVG}" "${OUTPUT_DIR}/rawavg.nii.gz"
 mri_convert "${FS_ASEG}" "${OUTPUT_DIR}/aseg.nii.gz"
