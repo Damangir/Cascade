@@ -15,7 +15,7 @@ Content
 
 Introduction
 -------
-Cascade, Classification of White Matter Changes, is a fully automated tool for quantification of White Matter Changes. Cascade is designed to be as flexible as possible. and can work with all sort of input sequences. It can work without any manually delineated samples as reference.
+Cascade, Classification of White Matter Changes, is a fully automated tool for quantification of White Matter Changes. Cascade is designed to be as flexible as possible and can work with all sort of input sequences. It can work without any manually delineated samples as reference. __Cascade is designed to work alongside other workflows such as FreeSurfer, SPM and FSL; and not as stand alone software; i.e. Cascade should be run as an extension to existing pipeline to add the capacity to analyse white matter changes. Using Cascade as stand alone software (with its pre-processing) is for demonstration only and should not be used in real research setting.__
 
 Please [report any issue](https://github.com/Damangir/Cascade/issues) at https://github.com/Damangir/Cascade/issues.
 
@@ -55,7 +55,7 @@ export CASCADE_BIN=Cascade/build
 export CASCADE_DATA=Cascade/data
 ```
 
-You can use script generators located at src/Shell to generate scripts for your studies. There are some ready to use scripts which can import the results of [freesurfer](http://surfer.nmr.mgh.harvard.edu/) or [volbrain](http://volbrain.upv.es/) and runs the Cascade based on their results. It is recommended to import the results of your GM analysis if you have any in your studies. Otherwise use the script generator to generate a script which handles GM analysis internally.
+You can use script generators located at src/Shell to generate scripts for your studies. There are some ready to use scripts which can import the results of [freesurfer](http://surfer.nmr.mgh.harvard.edu/) or [volbrain](http://volbrain.upv.es/) and runs the Cascade based on their results. __It is recommended to import the results of your GM analysis__. Otherwise use the script generator to generate a script which handles GM analysis internally __(This is for demonstration purpose only and not recommended)__.
 
 An example usage of the softwares are:
 
@@ -73,16 +73,15 @@ These scripts will generate a p-value mape ( 1-pvalue ) for being WML. You can u
 
 Citation
 -------
-We are publishing a paper detailing Cascade. Until its publication, if you are using this software in your research, you may use information at:
+If you are using this software in your research, you should refer to:
 
-> Damangir S, Manzouri A, Oppedal K, Carlsson S, Firbank MJ, Sonnesyn H, Tysnes OB, O'Brien JT, Beyer MK, Westman E, Aarsland D, Wahlund LO, Spulber G. Multispectral MRI segmentation of age related white matter changes using a cascade of support vector machines. J Neurol Sci. 2012 Nov 15;322(1-2):211-6. doi: 10.1016/j.jns.2012.07.064. Epub 2012 Aug 24. PubMed PMID: 22921728.
+> Damangir, S., Westman, E., Simmons, A., Vrenken, H., Wahlund, L. O., & Spulber, G. (2017). Reproducible segmentation of white matter hyperintensities using a new statistical definition. Magnetic Resonance Materials in Physics, Biology and Medicine, 30(3), 227-237.
 
-Any scientific work derived from the result of this software or its modifications should refer to these papers:
-* Single node reduced SVM for purging evident non-WMC: http://www.ncbi.nlm.nih.gov/pubmed/22921728
+> Damangir, S., Manzouri, A., Oppedal, K., Carlsson, S., Firbank, M. J., Sonnesyn, H., Tysnes O. B., O'Brien J. T., Beyer M. K., Westman E., Aarsland D., Wahlund L. O., Spulber G. (2012). Multispectral MRI segmentation of age related white matter changes using a cascade of support vector machines. Journal of the neurological sciences, 322(1), 211-216.
 
 Copyright
 -------
-Copyright (C) 2013-2015 [Soheil Damangir](http://www.linkedin.com/in/soheildamangir) - All Rights Reserved
+Copyright (C) 2013-2017 [Soheil Damangir](http://www.linkedin.com/in/soheildamangir) - All Rights Reserved
 
 License
 -------
